@@ -9,6 +9,8 @@ class dict<K, V> inherits std::list<std::pair<K, V>>:
         std::list(self, ...elements);
 
 
+    public has_key(self: &auto, key: K) -> bool:
+        return self.keys().contains(key);
 
 
 
@@ -137,6 +139,10 @@ class list<T>:
 
     public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
         return std::error(std::error::range_error("list::at_back: list is empty"));
+
+
+    public function contains(self: &auto, value: &T) -> bool:
+        return std::binary_search(self | std::sort(), value).is_ok();
 
 
     public function ...(self: &auto) -> T...:
