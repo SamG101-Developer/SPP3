@@ -1,0 +1,108 @@
+file std.containers
+
+
+class list<T>:
+    typedef value_type_t = T
+    typedef value_type_arr_t = #C_TYPE(T[])#
+
+    private data_f: value_type_arr_t = #C_INIT(T[])#;
+    private data_b: value_type_arr_t = #C_INIT(T[])#;
+    private size_f: std::number =  0;
+    private size_b: std::number = 0;
+
+    public function list(mut self: &auto):
+        ...
+
+    public function list(mut self: &auto, T... elements) where T: std::constraints::all_same:
+        self.emplace_back(elements)...;
+
+    public function size(self: &auto) -> std::number:
+        return self.size_f + self.size_b;
+
+
+    public function emplace_back(mut self: &auto, value: T):
+        self.data_f[&self.size_f] = value
+        self.size_f += 1
+
+    public function emplace_front(mut self: &auto, value: T):
+        self.data_b[&self.size_b] = value
+        self.size_b += 1
+
+
+    public function emplace(mut self: &auto, index: &std::number, value: T) where !: index % self.size() < &self.size_f:
+        # insert into data_f
+        ...
+
+    public function emplace(mut self: &auto, index: &std::number, value: T) where ! index % self.size() >= &self.size_f:
+        # insert into data_b
+        ...
+
+    public function emplace(self: &auto, index: &std::number, value: T):
+        self.emplace_back(value);
+
+
+    public function pop_back(mut self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_b != 0:
+        self.size_b -= 1;
+        return std::ok(self.data_b[self.size_b - 1]);
+
+    public function pop_back(mut self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_f != 0
+        self.size_f -= 1;
+        return std::ok(self.data_f[0]);
+
+    public function pop_back(self: &auto) -> std::expected<T, std::error::range_error> where !: self.size() == 0:
+            return std::error(std::error::range_error("list::pop_back: list is empty"));
+
+
+    public function pop_front(mut self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_f != 0:
+        self.size_b -= 1;
+        return std::ok(self.data_b[0]);
+
+    public function pop_front(mut self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_b != 0
+        self.size_f -= 1;
+        return std::ok(self.data_f[self.size_f - 1]);
+
+    public function pop_front(self: &auto) -> std::expected<T, std::error::range_error>:
+        return std::error(std::error::range_error("list::pop_front: list is empty"));
+
+
+    public function pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error> where index % self.size() < &self.size_f:
+        # pop from data_f
+        ...
+
+    public function pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
+        # pop from data_b
+        ...
+
+
+    public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error> where !: index % self.size() < &self.size_f:
+        return std::ok(self.data_f[self.size_f - index % self.size_f]);
+
+    public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error> where !: index % self.size() >= &self.size_f:
+        return std::ok(self.data_b[index % self.size_b]);
+
+    public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
+        return std::error(std::error::range_error("list::at: list is empty"));
+
+
+    public function at_front(self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_f != 0:
+        return std::ok(self.data_f[self.size_f - 1]);
+
+    public function at_front(self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_b != 0:
+            return std::ok(self.data_b[0]);
+
+    public function at_front(self: &auto) -> std::expected<T, std::error::range_error>:
+            return std::error(std::error::range_error("list::at_front: list is empty"));
+
+
+    public function at_back(self: &auto) -> std::expected<T, std::error::range_error> where !: self.size_b != 0:
+        return std::ok(self.data_b[self.size_b - 1]);
+
+    public function at_back(self: &auto) -> std::expected<T, std::error::range_error> where !: self._size_f != 0:
+        return std::ok(self.data_f[0]);
+
+    public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
+        return std::error(std::error::range_error("list::at_back: list is empty"));
+
+    @unsafe
+    public function[](self: &auto, index: &std::number) -> T:
+        return self.data[&index]
