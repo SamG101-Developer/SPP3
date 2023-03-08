@@ -8,7 +8,7 @@ import:
 @static_class
 class math:
     @static_method
-    def abs<T>(a: &T) -> number
+    def abs<T>(a: &T) -> T
             T: std::constraints::mathematical && std::constraints::bitwise
         let mask = a >> (std::math::bin_size(a) * 8 - 1);
         return (a ^ mask) - mask;

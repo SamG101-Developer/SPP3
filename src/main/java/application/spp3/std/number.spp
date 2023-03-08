@@ -16,19 +16,19 @@ class number inherits public std::object:
 
     # Compare two numbers, by checking the length of the stored by both, and if these are equal, then check the digits
     # from the left to right
-    public function<=>(self: &number, that: &number) -> std::ordering:
+    public function<=>(self: &number, that: &number) -> std::ord:
 
         # Check the length of the numbers and return the result if they are not equal
         let length_comparison = self.digits <=> that.digits;
-        length_comparison != std::ordering::equal ? return length_comparison;
+        length_comparison != std::ord::eq ? return length_comparison;
 
         # Check the digits from the left to right, and return the result if they are not equal
         for self_digit, that_digit <- std::zip(self.digits, that.digits):
             let digit_comparison = this_digit <=> that_digit;
-            digit_comparison != std::ordering::equal ? return digit_comparison;
+            digit_comparison != std::ord::eq ? return digit_comparison;
 
-        # If the numbers are equal, then return std::ordering::equal
-        return std::ordering::equal;
+        # If the numbers are equal, then return std::ord::eq
+        return std::ord::eq;
 
     @static_method
     def zero() -> number:
