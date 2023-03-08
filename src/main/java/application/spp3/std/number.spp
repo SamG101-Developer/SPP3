@@ -20,12 +20,9 @@ class number inherits public std::object:
         return self.digits <=> that.digits;
 
     public function<=>(self: &number, that: &number) -> std::ord:
-        # Check the digits from the left to right, and return the result if they are not equal
         for self_digit, that_digit <- std::zip(self.digits, that.digits):
             let digit_comparison = this_digit <=> that_digit;
             digit_comparison != std::ord::eq ? return digit_comparison;
-
-        # If the numbers are equal, then return std::ord::eq
         return std::ord::eq;
 
     public operator&(self: &number, that: &number) -> std::number:
