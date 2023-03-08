@@ -1,0 +1,496 @@
+{
+    parserClass = "application.spp3.SPPParser"
+    parserUtilClass = "application.spp3.SPPParserUtil"
+    extends = "com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix = "SPP"
+    psiImplClassSuffix = "Impl"
+    psiPackage = "application.spp3.psi"
+    psiImplPackage = "application.spp3.psi.impl"
+
+    elementTypeHolderClass = "application.spp3.SPPTypes"
+    elementTypeClass = "application.spp3.SPPElementType"
+    tokenTypeClass = "application.spp3.SPPTokenType"
+
+    tokens = [
+        space = "regexp:\s+"
+        comment = "regexp:#.*"
+
+        TK_NEWLINE = "regexp:[\r\n]+"
+
+        TK_DOT = "."
+        TK_COLON = ":"
+        TK_COMMA = ","
+        TK_ASSIGN = "="
+        TK_BITWISE_AND = "&"
+        TK_BITWISE_OR = "|"
+        TK_BITWISE_XOR = "^"
+        TK_BITWISE_NOT = "~"
+        TK_BITWISE_LSHIFT = "<<"
+        TK_BITWISE_RSHIFT = ">>"
+        TK_BITWISE_LROTATE = "<<<"
+        TK_BITWISE_RROTATE = ">>>"
+        TK_LOGICAL_AND = "&&"
+        TK_LOGICAL_OR = "||"
+        TK_LOGICAL_NOT = "!"
+        TK_LESS_THAN = "<"
+        TK_GREATER_THAN = ">"
+        TK_DBL_COLON = "::"
+        TK_LPAREN = "("
+        TK_RPAREN = ")"
+        TK_LBRACKET = "["
+        TK_RBRACKET = "]"
+        TK_LBRACE = "{"
+        TK_RBRACE = "}"
+        TK_QUESTION = "?"
+        TK_ELLIPSES = "..."
+        TK_EQUAL = "=="
+        TK_NOT_EQUAL = "!="
+        TK_LESS_THAN_EQUAL = "<="
+        TK_GREATER_THAN_EQUAL = ">="
+        TK_EOL = ";"
+        TK_PLUS = "+"
+        TK_MINUS = "-"
+        TK_MULTIPLY = "*"
+        TK_DIVIDE = "/"
+        TK_FLOOR_DIVIDE = "//"
+        TK_MODULO = "%"
+        TK_EXPONENTIATE = "**"
+        TK_QUESTION_QUESTION = "??"
+        TK_QUESTION_COLON = "?:"
+        TK_ARROW = "->"
+        TK_SWAP = "<->"
+        TK_SQUIGLE_ARROW = "~>"
+        TK_REVERSE_ARROW = "<-"
+        TK_INCREMENT = "++"
+        TK_DECREMENT = "--"
+        TK_AT = "@"
+        TK_SPACESHIP = "<=>"
+
+        KW_MODULE = "module"
+        KW_IMPORT = "import"
+        KW_EXPORT = "export"
+        KW_ENUM = "enum"
+        KW_INHERITS = "inherits"
+        KW_PUBLIC = "public"
+        KW_PROTECTED = "protected"
+        KW_PRIVATE = "private"
+        KW_PACKAGED = "packaged"
+        KW_CONSTRAINT = "constraint"
+        KW_ASYNC = "async"
+        KW_FUNCTION = "function"
+        KW_GENERATOR = "generator"
+        KW_MUT = "mut"
+        KW_LET = "let"
+        KW_IF = "if"
+        KW_ELSE = "else"
+        KW_WHILE = "while"
+        KW_FOR = "for"
+        KW_DO = "do"
+        KW_MATCH = "match"
+        KW_CASE = "case"
+        KW_RETURN = "return"
+        KW_CLASS = "class"
+        KW_TYPEDEF = "typedef"
+        KW_THREAD = "thread"
+        KW_DEFER = "defer"
+        KW_AWAIT = "await"
+        KW_FRIEND = "friend"
+        KW_WHERE = "where"
+        KW_TRUE = "true"
+        KW_FALSE = "false"
+
+        TK_IDENTIFIER = "regexp:[a-zA-Z_][a-zA-Z0-9_]*"
+        TK_BIN_DIGITS = "regexp:0b[0-1]+"
+        TK_HEX_DIGITS = "regexp:0x[0-9a-fA-F]+"
+        TK_DEC_DIGITS = "regexp:[0-9]+"
+        TK_DOUBLE_QUOTE_STRING = "regexp:\".*\""
+        TK_SINGLE_QUOTE_CHARACTER = "regexp:'.?'"
+        TK_REGEX = "regexp:r\".*\""
+    ]
+}
+
+
+Program ::=
+    ProgramContents <<eof>>
+ProgramContents ::=
+    ModuleDefinition ImportBlock? EnumPrototype* ConstraintPrototype* ClassPrototype* FunctionPrototype* ExportBlock?
+ModuleDefinition ::=
+    KW_MODULE ModuleIdentifier
+ModuleIdentifier ::=
+    Identifier (TK_DOT Identifier)*
+
+ImportBlock ::=
+    KW_IMPORT TK_COLON ImportDefinitions
+ImportDefinitions ::=
+    ImportDefinition*
+ImportDefinition ::=
+    TK_DOT* ModuleIdentifier TK_ARROW (Identifiers | TK_MULTIPLY)
+ExportBlock ::=
+    KW_EXPORT TK_COLON (ExportDefinitions | TK_MULTIPLY)
+ExportDefinitions ::=
+    Identifier (AnotherItem Identifier)*
+
+
+NewLine ::=
+    TK_NEWLINE
+
+
+ClassPrototype ::=
+    Decorators? KW_CLASS GenericIdentifier GenericInheritance? ApplyConstraints TK_COLON ClassImplementation
+ClassImplementation ::=
+    ClassAttribute* ClassTypedefs* ClassFriends* ClassMethodPrototype*
+ClassAttribute ::=
+    AccessModifier? KW_MUT? Identifier TK_COLON TK_BITWISE_AND? TypeIdentifier (TK_ASSIGN Expression)? TK_EOL
+ClassTypedefs ::=
+    AccessModifier? StatementTypedef
+ClassFriends ::=
+    AccessModifier? KW_FRIEND TypeIdentifier TK_EOL
+ClassMethodPrototype ::=
+    Decorators? AccessModifier? InnerFunctionPrototype
+AccessModifier ::=
+    KW_PUBLIC | KW_PRIVATE | KW_PROTECTED | KW_PACKAGED
+
+
+// An enum is a set of members, which can be either a name, or a name with an associated value. The value can be
+// any expression, and the name can be any identifier. The members can be separated by newlines, or commas.
+EnumPrototype ::=
+    KW_ENUM Identifier Inheritance? TK_COLON EnumMembers
+EnumMembers ::=
+    EnumMember (AnotherItem EnumMember)*
+EnumMember ::=
+    Identifier (TK_ASSIGN Expression)?
+
+
+// A constraint is a set of constraints, which can be either member constraints (attribute, function, typedef),
+// inheritance constraints (can be multiple inheritance), or function-fitting (can be passed into a function).
+ConstraintPrototype ::=
+    KW_CONSTRAINT GenericIdentifier GenericInheritance? TK_COLON ConstraintMembers
+ConstraintMembers ::=
+    (ConstraintMember TK_EOL)*
+ConstraintMember ::=
+    TypeIdentifier ConstraintFunctionTypeParameters? TK_ARROW ConstraintFunctionReturnType |
+    TypeIdentifier GenericInheritance |
+    TypeIdentifier FunctionCallArguments
+ConstraintFunctionTypeParameters ::=
+    TK_LPAREN (TK_QUESTION | TypeIdentifiers?) TK_RPAREN
+ConstraintFunctionReturnType ::=
+    TypeIdentifier | TK_QUESTION
+
+
+Inheritance ::=
+    KW_INHERITS AccessModifier? ScopedIdentifier (AnotherItem AccessModifier? ScopedIdentifier)*
+GenericInheritance ::=
+    KW_INHERITS AccessModifier? TypeIdentifier (AnotherItem AccessModifier? TypeIdentifier)*
+
+
+// Allow the construction of functions, which can optionally be async, can be a function or generator, has an
+// potentially generic identifier, a set of parameters, a set of constraints, and a set of statements. The constraints
+// can be a set of type constraints, and a set of value constraints.
+FunctionPrototype ::=
+    Decorators? InnerFunctionPrototype
+InnerFunctionPrototype
+    ::= TK_ASYNC? FunctionType (GenericIdentifier | (OperatorIdentifier TypeGenericArguments)) TK_LPAREN FunctionParameters TK_RPAREN TK_ARROW TypeIdentifier ApplyConstraints TK_COLON FunctionImplementation
+FunctionType ::=
+    KW_FUNCTION | KW_GENERATOR
+FunctionChain ::=
+    (TK_LOGICAL_OR | TK_LOGICAL_AND) TK_LOGICAL_NOT?
+FunctionImplementation ::=
+    StatementBlock
+
+
+ApplyConstraints ::=
+    KW_WHERE ApplyTypeConstraints? ApplyValueConstraints?
+ApplyTypeConstraints ::=
+    ApplyTypeConstraint (ApplyTypeConstraint)*
+ApplyTypeConstraint ::=
+    Identifier TK_COLON TypeIdentifier (FunctionChain TypeIdentifier)* TK_EOL // TODO : Shouldn't use TypeIdentifier (don't want |)
+ApplyValueConstraints ::=
+    Expression (AnotherItem Expression)*
+
+
+// How functions are called: the set of arguments, which will be all the normal arguments first, followed by all the
+// named arguments. The keyword arguments allow different optional parameters to be filled in, and the normal arguments
+// are the required parameters. The normal arguments are filled in in the order they are defined.
+FunctionCallArguments ::=
+    (FunctionCallNormalArguments (AnotherItem FunctionCallNamedArguments)?) | FunctionCallNamedArguments
+FunctionCallNormalArguments ::=
+    FunctionCallNormalArgument (AnotherItem FunctionCallNormalArgument)*
+FunctionCallNamedArguments ::=
+    FunctionCallNamedArgument (AnotherItem FunctionCallNamedArgument)*
+FunctionCallNormalArgument ::=
+    Expression
+FunctionCallNamedArgument ::=
+    Identifier TK_ASSIGN FunctionCallNormalArgument
+
+
+// How functions are defined: the set of required parameters, followed by the set of optional parameters. The optional
+// parameters are defined as a required parameter with a default value. The required parameters are defined as a
+// parameter with a type. The optional parameters order doesn't matter if named arguments are used, but the required
+// parameters order does matter.
+FunctionParameters ::=
+    FunctionRequiredParameters (AnotherItem FunctionOptionalParameters)? | FunctionOptionalParameters
+FunctionRequiredParameters ::=
+    FunctionRequiredParameter (AnotherItem FunctionRequiredParameter)*
+FunctionOptionalParameters ::=
+    FunctionOptionalParameter (AnotherItem FunctionOptionalParameter)* | FunctionVariadicParameter
+FunctionRequiredParameter ::=
+    KW_MUT? Identifier TK_COLON TK_BITWISE_AND? TypeIdentifier
+FunctionOptionalParameter ::= // TODO : Not working
+    FunctionRequiredParameter TK_ASSIGN Expression
+FunctionVariadicParameter ::= // TODO : Not working (via FunctionOptionalParameter)
+    FunctionRequiredParameter TK_ELLIPSES
+
+
+
+// Decorators are used to decorate the following item with additional information. They can decorate a function or a
+// class. TODO
+Decorator ::=
+    TK_AT ScopedIdentifier PostfixFunctionCallOperator?
+Decorators ::=
+    Decorator (NewLine Decorator)*
+
+
+// Lowest precedence operators
+Expression ::=
+    ExpressionAssignment
+ExpressionAssignment ::=
+    ExpressionTernary (OperatorIdentifierAssignment ExpressionAssignment)*
+ExpressionTernary ::=
+    ExpressionNullCoalescence (TK_QUESTION Expression (TK_COLON ExpressionTernary)?)*
+ExpressionNullCoalescence ::=
+    ExpressionLogicalOr (OperatorIdentifierNullCoalescing ExpressionNullCoalescence)*
+ExpressionLogicalOr ::=
+    ExpressionLogicalAnd (TK_LOGICAL_OR ExpressionLogicalOr)*
+ExpressionLogicalAnd ::=
+    ExpressionBitwiseOr (TK_LOGICAL_AND ExpressionLogicalAnd)*
+ExpressionBitwiseOr ::=
+    ExpressionBitwiseXor (TK_BITWISE_OR ExpressionBitwiseOr)*
+ExpressionBitwiseXor ::=
+    ExpressionBitwiseAnd (TK_BITWISE_XOR ExpressionBitwiseXor)*
+ExpressionBitwiseAnd ::=
+    ExpressionEquality (TK_BITWISE_AND ExpressionBitwiseAnd)*
+ExpressionEquality ::=
+    ExpressionRelational (OperatorIdentifierEquality ExpressionEquality)*
+ExpressionRelational ::=
+    ExpressionShift (OperatorIdentifierRelational ExpressionRelational)*
+ExpressionShift ::=
+    ExpressionRotate (OperatorIdentifierShift ExpressionShift)*
+ExpressionRotate ::=
+    ExpressionAdditive (OperatorIdentifierRotate ExpressionRotate)*
+ExpressionAdditive ::=
+    ExpressionMultiplicative (OperatorIdentifierAdditive ExpressionAdditive)*
+ExpressionMultiplicative ::=
+    ExpressionExponentiation (OperatorIdentifierMultiplicative ExpressionMultiplicative)*
+ExpressionExponentiation ::=
+    ExpressionUnary (OperatorIdentifierExponentiation ExpressionExponentiation)*
+ExpressionUnary ::=
+    (OperatorIdentifierUnary ExpressionUnary) | ExpressionPostfix
+ExpressionPostfix ::=
+    ExpressionPrimary (OperatorIdentifierPostfix)*
+ExpressionPrimary ::=
+    Literal | Identifier | ExpressionLambda | TK_LPAREN Expression TK_RPAREN
+ExpressionLambda ::=
+    TK_LBRACKET LambdaParameters TK_RBRACKET TK_ARROW Expression
+LambdaParameters ::=
+    TK_LPAREN Identifier (AnotherItem Identifier)* TK_RPAREN
+// Highest precedence expressions
+
+
+// The type system is simple and only based on a few rules: the type is a scoped identifier, for example, std::list,
+// and the type can be generic, for example, std::list<int>. Recursive generic types are allowed, for example,
+// std::list<std::list<std::int>>. A type can have a postfix, to either indicate a nested type, or a variant - for
+// example, std::list::value_type or std::list|std::int. The postfix can be repeated recursively. The type can also
+// have a ellipsis, to indicate a variadic type - for example, int... is an int parameter pack.
+TypeIdentifier ::=
+    ScopedIdentifier TypeGenericArguments? TypePostfix?
+TypeIdentifiers ::=
+    TypeIdentifier (AnotherItem TypeIdentifier)*
+TypeGenericArguments ::=
+    TK_LESS_THAN TypeIdentifiers TK_GREATER_THAN
+TypePostfix ::=
+    (TK_DBL_COLON | TK_BITWISE_OR) TypeIdentifier
+
+
+
+// All statements - these are the statements that can be used in the language. They are technically expressions, as they
+// can "return" values to the outer scope, but classed as statements because they can also be used as a statement.
+// Returning from a statement involves the last statement being the return value if assignment precedes the statement.
+StatementIf ::=
+    KW_IF StatementConditionExpressions? ExpressionCondition TK_COLON StatementBlock StatementElse?
+StatementElse ::=
+    KW_ELSE (StatementIf | (TK_COLON StatementBlock))
+StatementWhile ::=
+    KW_WHILE StatementConditionExpressions? ExpressionCondition TK_COLON StatementBlock
+StatementFor ::=
+    KW_FOR StatementConditionExpressions? ExpressionFor TK_COLON StatementBlock
+StatementDoWhile ::=
+    KW_DO TK_COLON StatementBlock KW_WHILE ExpressionCondition TK_EOL
+StatementMatch ::=
+    KW_MATCH StatementConditionExpressions? ExpressionCondition TK_COLON StatementCase* StatementCaseDefault
+StatementCase ::=
+    KW_CASE StatementConditionExpressions? ExpressionCondition TK_COLON StatementBlock
+StatementCaseDefault ::=
+    TK_UNDERSCORE TK_COLON StatementBlock
+StatementReturn ::=
+    KW_RETURN Expression TK_EOL
+StatementTypedef ::=
+    KW_TYPEDEF GenericIdentifier TK_ASSIGN TypeIdentifier TK_EOL
+StatementThread ::=
+    KW_THREAD Expression TK_EOL
+StatementDefer ::=
+    KW_DEFER Expression TK_EOL
+StatementAwait ::=
+    KW_AWAIT Expression TK_EOL
+StatementVariableDefinition ::=
+    (StatementVariableSingleDefinition | StatementVariableMultipleDefinition)
+StatementVariableSingleDefinition ::=
+    KW_LET KW_MUT? Identifier TK_ASSIGN (Expression | StatementIf | StatementMatch)
+StatementVariableMultipleDefinition ::=
+    KW_LET KW_MUT? Identifiers TK_ASSIGN (Expression | StatementIf | StatementMatch)
+Statement ::=
+    StatementIf | StatementWhile | StatementFor | StatementDoWhile | StatementMatch | StatementReturn | StatementTypedef
+    | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition TK_EOL) | (Expression TK_EOL)
+StatementBlock ::=
+    Statement+
+
+
+VariableDefinitionOrAssignment ::=
+    StatementVariableDefinition | (Identifier OperatorIdentifierAssignment Expression)
+StatementConditionExpressions ::=
+    (VariableDefinitionOrAssignment AnotherItem)*
+ExpressionCondition ::=
+    StatementVariableDefinition | Expression
+ExpressionFor ::=
+    (StatementVariableDefinition | Identifier) TK_REVERSE_ARROW Expression
+
+
+
+// All operator identifiers - these are the names of operators, and are used to identify the type of operator.
+OperatorIdentifierAssignment ::=
+    TK_ASSIGN | TK_SWAP | ((OperatorIdentifierNullCoalescing | OperatorIdentifierBitwise | OperatorIdentifierLogical | OperatorIdentifierAdditive | ExpressionMultiplicative | ExpressionExponentiation) TK_ASSIGN)
+OperatorIdentifierNullCoalescing ::=
+    TK_QUESTION_QUESTION | TK_QUESTION_COLON
+OperatorIdentifierEquality ::=
+    TK_EQUAL | TK_NOT_EQUAL
+OperatorIdentifierBitwise ::=
+    TK_BITWISE_AND | TK_BITWISE_OR | TK_BITWISE_XOR | TK_BITWISE_NOT | TK_BITWISE_LSHIFT | TK_BITWISE_RSHIFT | TK_BITWISE_LROTATE | TK_BITWISE_RROTATE
+OperatorIdentifierLogical ::=
+    TK_LOGICAL_AND | TK_LOGICAL_OR | TK_LOGICAL_NOT
+OperatorIdentifierRelational ::=
+    TK_LESS_THAN | TK_LESS_THAN_EQUAL | TK_GREATER_THAN | TK_GREATER_THAN_EQUAL | TK_SPACESHIP
+OperatorIdentifierShift ::=
+    TK_BITWISE_LSHIFT | TK_BITWISE_RSHIFT
+OperatorIdentifierRotate ::=
+    TK_BITWISE_LROTATE | TK_BITWISE_RROTATE
+OperatorIdentifierAdditive ::=
+    TK_PLUS | TK_MINUS
+OperatorIdentifierMultiplicative ::=
+    TK_MULTIPLY | TK_DIVIDE | TK_FLOOR_DIVIDE | TK_MODULO
+OperatorIdentifierExponentiation ::=
+    TK_EXPONENTIATE
+OperatorIdentifierMemberAccess ::=
+    TK_DOT | TK_QUESTION_DOT | TK_DOUBLE_COLON | TK_ARROW | TK_SQUIGLE_ARROW
+OperatorIdentifierUnary ::=
+    TK_PLUS | TK_MINUS | TK_BITWISE_NOT | TK_LOGICAL_NOT | (TK_BITWISE_AND KW_MUT?)
+OperatorIdentifierPostfix ::=
+    PostfixFunctionCallOperator | PostfixMemberAccessOperator | PostfixIndexAccessOperator |
+    PostfixSliceAccessOperator | PostfixIncrementOperator | PostfixDecrementOperator
+OperatorIdentifierBinary ::=
+    OperatorIdentifierNullCoalescing | OperatorIdentifierEquality | OperatorIdentifierBitwise |
+    OperatorIdentifierLogical | OperatorIdentifierRelational | OperatorIdentifierAdditive |
+    OperatorIdentifierMultiplicative | OperatorIdentifierExponentiation
+OperatorIdentifier ::=
+    OperatorIdentifierUnary | OperatorIdentifierBinary | "[]" | "()" | "++" | "--" | PostfixMemberAccessOperator
+
+
+// All identifiers - these are the names of variables, functions, classes, etc. Scoped, multiple, etc are all defined
+// here.
+Identifier ::=
+    TK_IDENTIFIER
+ScopedIdentifier ::=
+    Identifier (TK_DBL_COLON Identifier)*
+GenericIdentifier ::=
+    Identifier TypeGenericArguments?
+Identifiers ::=
+    Identifier (AnotherItem Identifier)*
+AnotherItem ::=
+    TK_COMMA
+
+
+
+// Postfix operators are operators that are applied to the end of an expression, and depending on the expression, may
+// be applied to the current part of the expression, or the result of the entire expression.
+PostfixFunctionCallOperator ::=
+    TK_LPAREN FunctionCallArguments? TK_RPAREN TK_ELLIPSES?
+PostfixMemberAccessOperator ::=
+    OperatorIdentifierMemberAccess Identifier
+PostfixIndexAccessOperator ::=
+    TK_LBRACKET Expression TK_RBRACKET
+PostfixSliceAccessOperator ::=
+    TK_LBRACKET Expression? TK_COLON Expression? (AnotherItem Expression)? TK_RBRACKET
+PostfixIncrementOperator ::=
+    TK_INCREMENT
+PostfixDecrementOperator ::=
+    TK_DECREMENT
+
+
+
+// All primary literals - these are literals that are not part of a larger expression, and are create-able directly by
+// the user. These are the only literals that can be used as a statement. All other literals are part of a larger
+// expression (secondary literals) and are not create-able directly by the user.
+Literal ::=
+    NumberLiteral | StringLiteral | CharLiteral | BooleanLiteral | ListLiteral | MapLiteral | TupleLiteral | SetLiteral
+    | PairLiteral | RegexLiteral // | OptionalLiteral | ExpectedLiteral
+NumberLiteral ::=
+    B10NumberLiteral | B16NumberLiteral | B2NumberLiteral
+StringLiteral ::=
+    TK_DOUBLE_QUOTE_STRING
+CharLiteral ::=
+    TK_SINGLE_QUOTE_CHARACTER
+BooleanLiteral ::=
+    KW_TRUE | KW_FALSE
+ListLiteral ::=
+    TK_LBRACKET Expression TK_DOT TK_DOT Expression? (AnotherItem Expression)? TK_RBRACKET |
+    TK_LBRACKET (Expression (AnotherItem Expression)*)? TK_RBRACKET
+MapLiteral ::=
+    TK_LBRACE InternalPairLiteral (AnotherItem InternalPairLiteral)* TK_RBRACE
+TupleLiteral ::=
+    TK_LPAREN (Expression AnotherItem)* TK_RPAREN
+SetLiteral ::=
+    TK_LBRACE (Expression (AnotherItem Expression)*)? TK_RBRACE
+PairLiteral ::=
+    TK_LPAREN InternalPairLiteral TK_RPAREN
+RegexLiteral ::=
+    TK_REGEX
+//OptionalLiteral ::=
+//    TK_QUESTION Expression
+//ExpectedLiteral ::=
+//    TK_LOGICAL_NOT Expression // !
+
+
+// All secondary literals - these are literals that are part of a larger expression, and are not create-able directly by
+// the user. These literals either make up or are choices for the primary literals.
+InternalPairLiteral ::=
+    Expression TK_COLON Expression
+B2NumberLiteral ::=
+    TK_BIN_DIGITS
+B10NumberLiteral ::=
+    Number
+B16NumberLiteral ::=
+    TK_HEX_DIGITS
+
+
+// Constructing a number - a number is a series of digits, with an optional decimal point, optionally complex via "i",
+// and an optional exponent. A number expressed as 3.5 + 2ie+5 will be evaluates at two separate numbers, and added
+// together into 1 number object
+Number ::=
+    OperatorIdentifierAdditive? NumericDecimal NumericComplex? NumericExponent?
+NumericDecimal ::=
+    NumericInteger (TK_DOT NumericInteger)?
+NumericInteger ::=
+    TK_DEC_DIGITS
+NumericExponent ::=
+    ("e" | "E") OperatorIdentifierAdditive Number
+NumericComplex ::=
+    ("i" | "I")

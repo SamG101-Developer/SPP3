@@ -1,0 +1,18 @@
+{
+    tokens = [
+        START_ = "ST"
+        END_ = "EN"
+        space = "regexp:[\s\t]"
+    ]
+
+    parserClass = "application.spp3.SPPParser"
+    parserUtilClass = "application.spp3.test.OtherParserUtil"
+    extends = "com.intellij.extapi.psi.ASTWrapperPsiElement"
+}
+
+
+root ::=
+    START_ statement+ END_ <<anything>>
+
+statement ::=
+    "0"

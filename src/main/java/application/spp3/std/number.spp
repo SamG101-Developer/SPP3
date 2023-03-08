@@ -1,0 +1,116 @@
+file std::number
+
+import:
+    std.object;
+    std.list;
+
+
+class number inherits public std::object:
+    typedef single_digit_t = #C_TYPE(uint_32)#;
+    typedef double_digit_t = #C_TYPE(uint_64)#;
+
+    private digits: std::list<single_digit_t> = [];
+
+    private constructor(digits: std::list<single_digit_t>):
+        self.digits = digits;
+
+    # Compare two numbers, by checking the length of the stored by both, and if these are equal, then check the digits
+    # from the left to right
+    public function<=>(self: &number, that: &number) -> std::ordering:
+
+        # Check the length of the numbers and return the result if they are not equal
+        let length_comparison = self.digits <=> that.digits;
+        length_comparison != std::ordering::equal ? return length_comparison;
+
+        # Check the digits from the left to right, and return the result if they are not equal
+        for self_digit, that_digit <- std::zip(self.digits, that.digits):
+            let digit_comparison = this_digit <=> that_digit;
+            digit_comparison != std::ordering::equal ? return digit_comparison;
+
+        # If the numbers are equal, then return std::ordering::equal
+        return std::ordering::equal;
+
+    @static_method
+    def zero() -> number:
+        return number([]);
+
+    @static_method
+    def one() -> number:
+        return number([1]);
+
+
+    public operator&(self: &number, that: &number) -> std::number:
+        return std::number(self.digits | std::zip(that.digits) | std::map((a, b) -> a & b));
+
+    public operator|(self: &number, that: &number) -> std::number:
+        return std::number(self.digits | std::zip_max(that.digits, 0) | std::map((a, b) -> a | b));
+
+    public operator^(self: &number, that: &number) -> std::number:
+        return std::number(self.digits | std::zip_max(that.digits, 0) | std::map((a, b) -> a ^ b));
+
+    public operator<<(self: &number, that: &number) -> std::number:
+        ...
+
+    public operator>>(self: &number, that: &number) -> std::number:
+        ...
+
+    public operator+(self: &number, that: &number) -> std::number:
+        self.is_zero() ? return that.clone();
+        that.is_zero() ? return self.clone();
+
+        function inner_sum(a: single_digit_t, b: single_digit_t) -> std::void:
+            let sum = a.as<double_digit_t>() + b.as<double_digit_t>() + carry.as<double_digit_t>();
+            return sum & 0xFFFFFFFF, sum >> 32;
+
+        let max_i, max_j = (self.digits.size(), that.digits.size(),);
+        let mut partial_sub, carry, i, j = 0;
+        let mut sum = type(self.digits)::new_reserve(self.digits.size() + that.digits.size() + 1);
+
+        while i < max_i || j < max_j || carry != 0:
+            partial_sum, carry = inner_sum(self.digits.at(i).result_or(0), that.digits.at(j).result_or(0));
+            sum.push_front(partial_sum);
+            i = std::cmp::min(i + 1, max_i);
+            j = std::cmp::min(j + 1, max_j);
+
+        return std::number(sum | std::pop_back_while(x -> x == 0));
+
+    public operator-(self: &number, that: &number) -> std::number:
+        self.is_zero() ? return -that.clone();
+        that.is_zero() ? return self.clone();
+
+        function inner_sub(a: single_digit_t, b: single_digit_t) -> std::void:
+            let sub = a.as<double_digit_t>() - b.as<double_digit_t>() - carry.as<double_digit_t>();
+            return sub & 0xFFFFFFFF, a < b;
+
+        let max_i, max_j = (self.digits.size(), that.digits.size(),);
+        let mut partial_sub, carry, i, j = 0;
+        let mut sub = type(self.digits)::new_reserve(self.digits.size() + that.digits.size());
+
+        while i < max_i || j < max_j || carry != 0:
+            partial_sub, carry = inner_sub(self.digits.at(i).result_or(0), that.digits.at(j).result_or(0));
+            sub.push_front(partial_sub);
+            i = std::cmp::min(i + 1, max_i);
+            j = std::cmp::min(j + 1, max_j);
+
+        return std::number(sub | std::pop_back_while(x -> x == 0));
+
+    public operator*(self: &number, that: &number) -> std::number where
+            self.is_zero() || that.is_zero():
+        return std::number::zero();
+
+    public operator*(self: &number, that: &number) -> std::number where
+            self.digits.size() == 1 && that.digits.size() == 1:
+        return std::number([self.digits[0] * that.digits[0]]);
+
+    public operator*(self: &number, that: &number) -> std::number:
+        let m = std::math::max(self.digits.size(), that.digits.size()) >> 1;
+        let self_hi, self_lo = self.digits | std::split_at(m);
+        let that_hi, that_lo = that.digits | std::split_at(m);
+
+        ket z0, z1, z2 = await std::async_task_group(
+            self_lo * that_lo),
+            self_lo + self_hi) * (that_lo + that_hi),
+            self_hi * that_hi)).exec_all();
+
+        return (z2 << (m << 1)) + ((z1 - z2 - z0) << m) + z0;
+

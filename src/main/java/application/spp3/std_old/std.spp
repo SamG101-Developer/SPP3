@@ -1,0 +1,182 @@
+@static_class
+class std:
+    struct base_iterable_piped_struct<F>
+            F: std.constraints.callable:
+        protected let predicate: &F
+
+        function constructor(&predicate: F)
+            self.predicate = &predicate
+
+
+    struct map<F> inherits base_iterable_piped_struct<F>:
+        function constructor(&predicate: F)
+            type(self).super_types[0].constructor(&self, &predicate)
+
+        function operator()<T, U>(collection: T<U>) -> T<F.return_t>
+                T: constraints.iterable,
+                F: constraints.can_call<T.value_type>:
+
+            # Iterate over the collection and apply the predicate to each item
+            let mut result = T<U>()
+            for let item <- collection:
+                result.emplace_back(self.predicate(&item))
+            return result
+
+    struct filter<F>:
+        let predicate: &F
+        function constructor(predicate: F)
+                F: constraints.callable && constraints.result_type_is<bool>:
+            self.predicate = predicate
+
+        function operator()<T, U>(collection: T<U>) -> T<&U>
+                T: constraints.iterable,
+                F: constraints.can_call<U>:
+
+            let mut result = T<U>()
+            for let item <- collection:
+                self.predicate(&item) ? result.emplace_back(&item)
+            return result
+
+    class list<T>:
+        function operator|<F>(&mut self: auto, &struct: F):
+                F: constraints.callable && constraints.can_call<T>:
+            return struct(&self)
+
+
+module src.folder1.folder2
+
+import:
+    src.folder1.folder2.folder3 -> class3, constraint3
+    src.folder1.folder2.folder4 -> class4, constraint4
+    ..folders.folder5 -> class5, constraint5
+
+
+class c1<T, U> inherits c2<U>:
+    public a: T;
+    public b: U;
+
+    friend std::list; # class is std::list<T>, but std::list allows for any T
+
+    public function c1(&mut self: c1, a: T, b: U) -> std::none_t:
+        self.a = a;
+        self.b = b;
+
+    public function c1(&mut self: c1, a: T) -> std::none_t:
+        self.a = a;
+        self.b = U();
+
+
+    @staticmethod
+    public function s_method(a: C) -> std::number_t:
+        return 0;
+
+function hello_world<T>(&mut val: std::string) -> T
+        T: std::copyable && std::movable
+        !: val.length() < 100, val.length() > 0:
+
+
+    # typedef iter = std::list<std::map<std::string, std::int | std::bool>>::iterator_t;
+    # issue with >> at end of generic -> tries to use the ">>" operator
+
+    let a = 123;
+    let mut b = 11;
+    let c = &mut a;
+
+    thread self.function_a(1, 2, 3);
+    defer self.clean();
+    await self.async_function();
+
+    # issue: empty statements allowed at the moment
+
+    if c == 1:
+        print("good");
+    else:
+        print("good");
+
+    while c < 1:
+        print("good");
+
+    for i <- [0..10]:
+        print("good");
+
+    do:
+        print("good");
+        c += 0.5;
+    while c < 1;
+
+
+    let a, b, c = func();
+
+    match c:
+        case 1: print("good");
+        case 2: print("good");
+        case 3: print("good");
+        case _: print("good");
+
+    let c = match a:
+        case 1: 1;
+        case 2: 2;
+        case 3: 3;
+        case _: 4;
+
+    let c = a = v;
+    c <-> a;
+    let c = a ? b : c;
+    let c = a ?? c;
+    let c = a ?: c;
+    let c = a || c;
+    let c = a && c;
+    let c = a | c;
+    let c = a ^ c;
+    let c = a & c;
+    let c = a == c;
+    let c = a != c;
+    let c = a < c;
+    let c = a <= c;
+    let c = a > c;
+    let c = a >= c;
+    let c = a << c;
+    let c = a >> c;
+    let c = a <<< c;
+    let c = a >>> c;
+    let c = a + c;
+    let c = a - c;
+    let c = a * c;
+    let c = a / c;
+    let c = a // c;
+    let c = a % c;
+    let c = a ** c;
+    let c = !a;
+    let c = ~a;
+    let c = -a;
+    let c = +a;
+    let c = &a;
+    let c = &mut a;
+    let c = a.b;
+    let c = a.b(v, o, arg3/=r); # issue
+    let c = a[0:10, -4];
+    let c = a->v;
+    let c = a~>v;
+    let c = a++;
+
+    # issue w complex numbers (i and e together)
+    let c = 123.23e-10 + 1.2i;
+    let c = "hello world";
+    let c = 'a';
+    let c = true;
+    let c = false;
+    let c = [0, 1, 2, var, func()];
+    let c = [first..end(), -increment()];
+    # issue let c = [first..end(), -increment(), 0];
+    let c = {a: 1, b: 2, c: 3};
+    let c = (a, b, c,);
+    let c = r"[A-Z]+";
+
+    let c = 0b100101;
+    let c = 0x1234abc;
+
+    let c = (a : v);
+    let c = ("hello");
+    return c;
+    # issue let c = (x, y, z) -> x + y + z;
+

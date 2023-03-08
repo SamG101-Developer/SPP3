@@ -1,0 +1,23 @@
+file std.compare;
+
+
+import:
+    std.number
+
+
+@static_class
+class compare:
+    @static_method
+    def max<T, U>(a: T, b: U) -> number
+            T: std::constraints::mathematical && std::constraints::bitwise
+            U: std::constraints::mathematical && std::constraints::bitwise
+        let mask = (a - b) >> (std::math::bin_size(a) * 8 - 1);
+        return (a & ~mask) | (b & mask);
+
+
+    @static_method
+    def min<T, U>(a: T, b: U) -> number
+            T: std::constraints::mathematical && std::constraints::bitwise
+            U: std::constraints::mathematical && std::constraints::bitwise
+        let mask = (a - b) >> (std::math::bin_size(a) * 8 - 1);
+        return (a & mask) | (b & ~mask);

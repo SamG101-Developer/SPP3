@@ -1,0 +1,169 @@
+static class std:    
+    class list<t> inherits container_base<t>:
+        public function constructor(let self: auto*) -> none_t&:
+            ...
+    
+        public function constructor(let self: mutable auto*, let size: number*) -> none_t&:
+            ...
+    
+        public function constructor(let self: mutable auto*, let size: number*, let value: t*) -> none_t&:
+            ...
+    
+        public function constructor(let self: mutable auto*, t*... elements) -> none_t&:
+            ...
+    
+        public function chunk(self: auto*, chunk_length: number) -> list<list<t*>*>&:
+            let chunked: mutable auto& = move list<list<t*>>()
+            for (let index: auto* <- [0..self.size(), chunk_length]):
+                chunked.append(view self[index:index + chunk_length])
+            return move chunked
+    
+        public function chunk_if<f>(self: auto*, function: f*) -> list<list<t*>*>&: # TODO
+            let chunked: mutable auto& = move list<list<t*>>()
+            for (let [lhs, rhs]: auto* <- self.zip(self[1:])):
+                discard function(view lhs, view rhs) ? chunked.append(view self[lhs:rhs])
+            return move chunked
+    
+        public function cycle(self: auto*, times: number*) -> list<t*>&:
+            let cycled: mutable auto& = move list<t*>()
+            for (let _ <- [0..times]):
+                cycled += view self
+            return move cycled
+    
+        public function drop(self: auto*, count: number*) -> list<t*>&:
+            return move self[count:]
+    
+        public function drop_while<f>(self: auto*, function: f*) -> list<t*>&:
+            let dropped: mutable auto& = move list<t*>()
+            for (let element: auto*: self.filter(move function, true)
+                element == null ? return move dropped : dropped.append(view element)
+    
+        public function enumerate(self: auto*) -> list<pair<number*, t*>*>&:
+            let enumerated: mutable auto& = move list<pair<number*, t*>>()
+            for (let [index, element]: auto* <- self.zip([0..self.size()])):
+                enumerated.append(move pair(view index, view element))
+            return move enumerated
+    
+        public function filter<f>(self: auto*, function: f*, keep_null: bool*) -> list<t*>&:
+            let filtered: mutable auto& = move list<t*>()
+            for (let element: auto*: self):
+                discard function(view element) ? filtered.append(view element)
+            return keep_null ? move filtered : move filtered.remove_all(move null)
+    
+        public function for_each<f>(self: auto*, function: f*) -> none_t&:
+            for (let element: auto*: self):
+                function(view element)
+    
+        public function intersperse(self: auto*, delimiter: t*) -> list<t*>&:
+            let interspersed: mutable auto& = move list<t*>()
+            for (let index: auto* <- [0..self.size()]):
+                interspersed.append(view self[index], view delimiter)
+            return move interspersed.take(view self.size() * 2 - 1)
+    
+        public function join(self: auto*) -> list<t*>&:
+            let joined: mutable auto& = move list<t.value_type*>()
+            for (let index: auto* <- [0..self.size()]):
+                joined.extend(view self[index])
+            return move joined
+
+        public function remove_all(self: mutable auto*, match: t*) -> list<t*>*:
+            for (let element: auto* <- self):
+                element == match ? self.remove(element)
+            return view self
+
+        public function remove_if<f>(self: mutable auto*, function: f*) -> list<t*>*:
+            for (let element: auto* <- self):
+                discard function(view element) ? self.remove(element)
+            return view self
+
+        public function replace_all(self: mutable auto*, match: t*, replacement: t*) -> list<t*>*:
+            for (let element: auto* <- self):
+                element == match ? self.replace(element, replacement)
+            return view self
+
+        public function replace_if<f>(self: mutable auto*, function: f*, replacement: t*) -> list<t*>*:
+            for (let element: auto* <- self):
+                discard function(view element) ? self.replace(element, replacement)
+            return view self
+
+        public function reverse(self: auto*) -> list<t*>&:
+            let reversed: mutable auto& = move list<t*>()
+            for (let index: auto* <- [0..self.size()]):
+                reversed.append(view self[self.size() - index - 1])
+            return move reversed
+
+        public function set_difference(self: auto*, other: auto*) -> list<t*>&:
+            let difference: mutable auto& = move self.filter(!other.contains)
+            return move difference
+
+        public function set_intersection(self: auto*, other: auto*) -> list<t*>&:
+            let intersection: mutable auto& = move self.filter(other.contains)
+            return move intersection
+
+        public function set_symmetric_difference(self: auto*, other: auto*) -> list<t*>&:
+            let difference: mutable auto& = move self.filter(!self.contains && !other.contains)
+            return move difference
+
+        public function slice(self: auto*, start: number*, end: number*) -> list<t*>&:
+            let sliced: mutable auto& = move list<t*>()
+            for (let index: auto* <- [start..end]):
+                sliced.append(view self[index])
+            return move sliced
+
+        public function sliding_window(self: auto*, window_size: number*) -> list<list<t*>*>&:
+            let windowed: mutable auto& = move list<list<t*>>()
+            for (let index: auto* <- [0..self.size() - window_size + 1]):
+                windowed.append(view self[index:index + window_size])
+            return move windowed
+
+        public function sort<f>(self: mutable auto*, f* comparator) -> list<t*>&:
+            ...
+    
+        public function transform<f>(self: auto*, function: f*) -> list<f.return_type>&:
+            let transformed: mutable auto& = move list<f.return_type>()
+            for (let element: auto*: self):
+                transformed.append(move function(view element))
+            return move transformed
+    
+        public function operator+(self: auto*, other: auto*) -> list<t*>&:
+            let result: mutable auto& = copy self
+            for (let element: auto*: other):
+                result.append(view element)
+            return move result
+    
+        public function append(self: mutable auto*, element: t*...) -> none_t&:
+            ...
+    
+        public function prepend(self: mutable auto*, element: t*...) -> none_t&:
+            ...
+    
+        public function insert(self: mutable auto*, index: number*, element: t*...) -> none_t&:
+            ...
+            
+        public function extend(self: mutable auto*, other: list<list<t*>*>&) -> none_t&:
+            ...
+
+        public function remove(self: mutable auto*, element: t*) -> none_t&:
+            ...
+
+        public function replace(self: mutable auto*, element: t*, replacement: t*) -> none_t&:
+            ...
+    
+    
+    class list<pair<k, v>>:
+        public function keys(self: auto*) -> list<k>:
+            return self.transform(view pair<k, v>.first)
+            
+        public function values(self: auto*) -> list<v>:
+            return self.transform(view pair<k, v>.second)
+
+
+    class list<number>:
+        public static function from_range(self: auto*, number* start, number* end, number* step) -> list<number>&:
+            self = [start..end, step]
+
+        public static function from_linear_distribution(self: auto*, number* start, number* end, number* count) -> list<number>&:
+            self = [start..end, (end - start) / (count - 1)]
+    
+    using map<k, v> = list<pair<k, v>>
+
