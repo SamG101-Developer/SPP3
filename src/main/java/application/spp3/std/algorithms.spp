@@ -10,7 +10,7 @@ class base_iterable_operation<F>:
 
     @abstract_method
     public function()<I>(self: &auto, iterable: I) -> auto
-    where I: std::iterable && std::pipeable:
+    where I: std::iterable:
         ...
 
 
@@ -21,7 +21,7 @@ class filter<F> inherits private base_iterable_operation<F>:
 
     @override_method
     public function()<I>(self: &auto, iterable: &I) -> mut I where
-            I: std::iterable && std::pipeable;
+            I: std::iterable;
             F: std::callable_accepts<I::value_type>:
 
         let mut filtered = I();
@@ -37,7 +37,7 @@ class transform<F> inherits private base_iterable_operation<F>:
 
     @override_method
     public function()<I<T>>(self: &auto, iterable: &I<T>) -> I<F::return_type>
-            I: std::iterable && std:pipeable;
+            I: std::iterable;
             F: std::callable_accepts<I::value_type>:
 
         let mut transformed = I<F::return_type>();
