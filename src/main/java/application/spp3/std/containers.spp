@@ -7,13 +7,13 @@ class list<T>:
 
     private data_f: value_type_arr_t = #C_INIT(T[])#;
     private data_b: value_type_arr_t = #C_INIT(T[])#;
-    private size_f: std::number =  0;
+    private size_f: std::number = 0;
     private size_b: std::number = 0;
 
     public function list(mut self: &auto):
         ...
 
-    public function list(mut self: &auto, T... elements) where T: std::constraints::all_same:
+    public function list(mut self: &auto, T... elements)
         self.emplace_back(elements)...;
 
 
