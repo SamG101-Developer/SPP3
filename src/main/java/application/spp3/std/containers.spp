@@ -1,24 +1,19 @@
 file std.containers
 
 
-class dict<K, V> inherits std::list<std::pair<K, V>>:
-    public function dict(mut self: &auto):
+class map<K, V, P> inherits std::list<P<K, V>>
+where P: std::constraints::inherits<std::pair>:
+    public function dict(mut self: &auto, pairer: P=std::pair<K, V>):
         ...
-
-    public function dict(mut self: &auto, std::pair<K, V>... elements):
-        std::list(self, ...elements);
-
 
     public function has_key(self: &auto, key: K) -> bool:
         return self.keys().contains(key);
 
     public function keys(self: &auto) -> std::list<K>:
-        return &self | std::map(std::pair::first);
+        return &self | std::map(P::first);
 
     public function values(self: &auto) -> std::list<V>:
-        return &self | std::map(std::pair::second);
-
-
+        return &self | std::map(P::second);
 
 
 class list<T> inherits private std::list_base<T>:
@@ -209,6 +204,11 @@ class list_base<T>:
     where U: std::constraints::unpackable:
         cls.emplace_back(...other)...;
         return cls;
+
+    @class_method
+    public function<T, U>|(cls: &mut T, other: &U) -> U::()::return_type
+    where U: std::constraints::callable:
+        return other(self)
 
     @unsafe
     public function[](self: &auto, index: &std::number) -> T:

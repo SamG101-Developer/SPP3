@@ -90,6 +90,7 @@
         KW_MATCH = "match"
         KW_CASE = "case"
         KW_RETURN = "return"
+        KW_YIELD = "yield"
         KW_CLASS = "class"
         KW_TYPEDEF = "typedef"
         KW_THREAD = "thread"
@@ -334,6 +335,8 @@ StatementCaseDefault ::=
     TK_UNDERSCORE TK_COLON StatementBlock
 StatementReturn ::=
     KW_RETURN Expression TK_EOL
+StatementYield ::=
+    KW_YIELD Expression TK_EOL
 StatementTypedef ::=
     KW_TYPEDEF GenericIdentifier TK_ASSIGN TypeIdentifier TK_EOL
 StatementThread ::=
@@ -349,8 +352,9 @@ StatementVariableSingleDefinition ::=
 StatementVariableMultipleDefinition ::=
     KW_LET KW_MUT? Identifiers TK_ASSIGN (Expression | StatementIf | StatementMatch)
 Statement ::=
-    StatementIf | StatementWhile | StatementFor | StatementDoWhile | StatementMatch | StatementReturn | StatementTypedef
-    | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition TK_EOL) | (Expression TK_EOL)
+    StatementIf | StatementWhile | StatementFor | StatementDoWhile | StatementMatch | StatementReturn | StatementYield |
+    StatementTypedef | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition TK_EOL) |
+    (Expression TK_EOL)
 StatementBlock ::=
     Statement+
 

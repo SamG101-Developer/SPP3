@@ -1,0 +1,66 @@
+file std.algorithms;
+
+
+import:
+    std.constraints;
+
+
+class base_iterable_operation<F>:
+    protected f: F;
+
+    @abstract_method
+    public function()<I>(self: &auto, iterable: I) -> auto
+    where I: std::iterable && std::pipeable:
+        ...
+
+
+class filter<F> inherits private base_iterable_operation<F>:
+    public function filter(mut self: &auto, f: F) -> filter
+    where F: std::callable_has_number_params(1) && std::callable_returns<bool>:
+        self.f = f;
+
+    @override_method
+    public function()<I>(self: &auto, iterable: &I) -> mut I where
+            I: std::iterable && std::pipeable;
+            F: std::callable_accepts<I::value_type>:
+
+        let mut filtered = I();
+        for element <- iterable:
+            self.f(&element) ? filtered.emplace_back(&element);
+        return filtered
+
+
+class transform<F> inherits private base_iterable_operation<F>:
+    public function transform(mut self: &auto, f: F) -> transform
+    where F: std::callable_has_number_params(1):
+        self.f = f
+
+    @override_method
+    public function()<I<T>>(self: &auto, iterable: &I<T>) -> I<F::return_type>
+            I: std::iterable && std:pipeable;
+            F: std::callable_accepts<I::value_type>:
+
+        let mut transformed = I<F::return_type>();
+        for element <- iterable:
+            transformed.emplace_back(self.f(&element));
+        return transformed;
+
+
+class zip<I> inherits private base_iterable_operation<F>:
+    public function zip(mut self: &auto, i: &I) -> zip
+    where I: std::constraints::iterable:
+        self.lhs = i;
+
+    @override_method
+    public function()<J, P=std::pair, M=std::map<I::value_type, J::value_type, P>>(self: &auto, rhs) -> T where
+            M: std::constraints::map_like && std::constraints::generics_match<I::value_type, J::value_type, P>;
+            P: std::constraints::inherits<std::pair>
+            J: std::constraints::iterable:
+
+        let mut zipped = M();
+        for index <- [0..std::cmp::min(i.size(), j.size())]:
+            zipped.emplace_back(&self.lhs[&index], &rhs[&index]);
+        return zipped;
+
+
+
