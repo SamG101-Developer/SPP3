@@ -8,7 +8,7 @@ import:
 @static_class
 class compare:
     @static_method
-    def max<T, U>(a: T, b: U) -> number
+    def max<T, U>(a: &T, b: &U) -> number
             T: std::constraints::mathematical && std::constraints::bitwise
             U: std::constraints::mathematical && std::constraints::bitwise
         let mask = (a - b) >> (std::math::bin_size(a) * 8 - 1);
@@ -16,7 +16,7 @@ class compare:
 
 
     @static_method
-    def min<T, U>(a: T, b: U) -> number
+    def min<T, U>(a: &T, b: &U) -> number
             T: std::constraints::mathematical && std::constraints::bitwise
             U: std::constraints::mathematical && std::constraints::bitwise
         let mask = (a - b) >> (std::math::bin_size(a) * 8 - 1);
