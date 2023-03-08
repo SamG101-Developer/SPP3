@@ -31,12 +31,12 @@ class list<T>:
 
 
     public function emplace_back(mut self: &auto, value: T):
-        self.data_f[&self.size_f] = value
-        self.size_f += 1
-
-    public function emplace_front(mut self: &auto, value: T):
         self.data_b[&self.size_b] = value
         self.size_b += 1
+
+    public function emplace_front(mut self: &auto, value: T):
+        self.data_f[&self.size_f] = value
+        self.size_f += 1
 
 
     public function emplace(mut self: &auto, index: &std::number, value: T)
