@@ -14,12 +14,8 @@ class number inherits public std::object:
     private constructor(digits: std::list<single_digit_t>):
         self.digits = digits;
 
-    public function<=>(self: &number, that: &number) -> std::ord where
-            !: self.digits <=> that.digits != std::ord::eq:
-        # Check the length of the numbers and return the result if they are not equal
-        return self.digits <=> that.digits;
-
     public function<=>(self: &number, that: &number) -> std::ord:
+        self.digits <=> that.digits != std::ord::eq ? return self.digits <=> that.digits;
         for self_digit, that_digit <- std::zip(self.digits, that.digits):
             let digit_comparison = this_digit <=> that_digit;
             digit_comparison != std::ord::eq ? return digit_comparison;
@@ -80,15 +76,10 @@ class number inherits public std::object:
 
         return std::number(sub | std::pop_back_while(x -> x == 0));
 
-    public operator*(self: &number, that: &number) -> std::number where
-            !: self.is_zero() || that.is_zero():
-        return std::number::zero();
-
-    public operator*(self: &number, that: &number) -> std::number where
-            !: self.digits.size() == 1 && that.digits.size() == 1:
-        return std::number([self.digits[0] * that.digits[0]]);
-
     public operator*(self: &number, that: &number) -> std::number:
+        self.is_zero() || that.is_zero() ? return std::number::zero();
+        self.digits.size() == 1 && that.digits.size() == 1 ? return std::number([self.digits[0] * that.digits[0]]);
+
         let m = std::math::max(self.digits.size(), that.digits.size()) >> 1;
         let self_hi, self_lo = self.digits | std::split_at(m);
         let that_hi, that_lo = that.digits | std::split_at(m);
