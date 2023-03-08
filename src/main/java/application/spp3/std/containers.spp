@@ -1,6 +1,18 @@
 file std.containers
 
 
+class dict<K, V> inherits std::list<std::pair<K, V>>:
+    public function dict(mut self: &auto):
+        ...
+
+    public function dict(mut self: &auto, std::pair<K, V>... elements):
+        std::list(self, ...elements);
+
+
+
+
+
+
 class list<T>:
     typedef value_type_t = T
     typedef value_type_arr_t = #C_TYPE(T[])#
@@ -126,6 +138,21 @@ class list<T>:
     public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
         return std::error(std::error::range_error("list::at_back: list is empty"));
 
+
+    public function ...(self: &auto) -> T...:
+        # Get the T[] data somehow
+        ...
+
+    @class_method
+    public function<T, U>+(cls: &T, other: &U) -> T
+    where U: std::constraints::unpackable:
+        return cls.clone() += other;
+
+    @class_method
+    public function<T, U>+=(cls: &mut T, other: &U) -> T
+    where U: std::constraints::unpackable:
+        cls.emplace_back(...other)...;
+        return cls;
 
     @unsafe
     public function[](self: &auto, index: &std::number) -> T:
