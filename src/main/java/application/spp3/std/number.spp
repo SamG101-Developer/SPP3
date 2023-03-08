@@ -14,14 +14,12 @@ class number inherits public std::object:
     private constructor(digits: std::list<single_digit_t>):
         self.digits = digits;
 
-    # Compare two numbers, by checking the length of the stored by both, and if these are equal, then check the digits
-    # from the left to right
-    public function<=>(self: &number, that: &number) -> std::ord:
-
+    public function<=>(self: &number, that: &number) -> std::ord where
+            !: self.digits <=> that.digits != std::ord::eq:
         # Check the length of the numbers and return the result if they are not equal
-        let length_comparison = self.digits <=> that.digits;
-        length_comparison != std::ord::eq ? return length_comparison;
+        return self.digits <=> that.digits;
 
+    public function<=>(self: &number, that: &number) -> std::ord:
         # Check the digits from the left to right, and return the result if they are not equal
         for self_digit, that_digit <- std::zip(self.digits, that.digits):
             let digit_comparison = this_digit <=> that_digit;
@@ -29,15 +27,6 @@ class number inherits public std::object:
 
         # If the numbers are equal, then return std::ord::eq
         return std::ord::eq;
-
-    @static_method
-    def zero() -> number:
-        return number([]);
-
-    @static_method
-    def one() -> number:
-        return number([1]);
-
 
     public operator&(self: &number, that: &number) -> std::number:
         return std::number(self.digits | std::zip(that.digits) | std::map((a, b) -> a & b));
@@ -95,11 +84,11 @@ class number inherits public std::object:
         return std::number(sub | std::pop_back_while(x -> x == 0));
 
     public operator*(self: &number, that: &number) -> std::number where
-            self.is_zero() || that.is_zero():
+            !: self.is_zero() || that.is_zero():
         return std::number::zero();
 
     public operator*(self: &number, that: &number) -> std::number where
-            self.digits.size() == 1 && that.digits.size() == 1:
+            !: self.digits.size() == 1 && that.digits.size() == 1:
         return std::number([self.digits[0] * that.digits[0]]);
 
     public operator*(self: &number, that: &number) -> std::number:
