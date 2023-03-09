@@ -18,6 +18,7 @@ class filter<F> inherits private base_iterable_operation<F>:
     public function filter(mut self: &auto, f: F) -> filter
     where F: std::callable_has_number_params(1) && std::callable_returns<bool>:
         self.f = f;
+        return self;
 
     @override_method
     public function()<I>(self: &auto, iterable: &I) -> mut I where
@@ -47,20 +48,64 @@ class transform<F> inherits private base_iterable_operation<F>:
 
 
 class zip<I> inherits private base_iterable_operation<F>:
+    private rhs: &I;
+
     public function zip(mut self: &auto, i: &I) -> zip
     where I: std::constraints::iterable:
-        self.lhs = i;
+        self.rhs = i;
+        return self;
 
     @override_method
-    public function()<J, P=std::pair, M=std::map<I::value_type, J::value_type, P>>(self: &auto, rhs) -> T where
+    public function()<J, P=std::pair, M=std::map<I::value_type, J::value_type, P>>(self: &auto, lhs) -> T where
             M: std::constraints::map_like && std::constraints::generics_match<I::value_type, J::value_type, P>;
             P: std::constraints::inherits<std::pair>
             J: std::constraints::iterable:
 
         let mut zipped = M();
         for index <- [0..std::cmp::min(i.size(), j.size())]:
-            zipped.emplace_back(&self.lhs[&index], &rhs[&index]);
+            zipped.emplace_back(&lhs[&index], &self.rhs[&index]);
         return zipped;
 
 
+class reverse:
+    public function reverse(&self: reverse) -> reverse:
+        return self;
 
+    @override_method
+    public function()<I>(self: &auto, iterable: &I) -> I where
+            I: std::constraints::iterable:
+
+        let mut reversed = I();
+        for element <- iterable:
+            reversed.emplace_front(&element);
+        return reversed;
+
+
+class concat:
+    private containers: std::list<&std::object>;
+
+    public function concat(&self: concat, &T... containers) -> concat:
+        self.containers = [containers.as<std::object>()...];
+        return self;
+
+    @override_method
+    public function()<I, J>(self: &auto, lhs: &I) -> I
+    where I: std::constraints::iterable:
+        return lhs.clone() + ... + self.containers.as<I>()...;
+
+
+class slice:
+    private start: number;
+    private end: number;
+    private step: number;
+
+    public function slice(&self: slice, start: number, end: number, step: number) -> slice:
+        self.start = start;
+        self.end = end;
+        self.step = step;
+        return self;
+
+    @override_method
+    public function()<I>(self: &auto, i: &I) -> I
+    where I: std::constraints::iterable:
+        return i[self.start..self.end, self.step];
