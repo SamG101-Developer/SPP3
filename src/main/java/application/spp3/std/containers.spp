@@ -16,66 +16,144 @@ where P: std::constraints::inherits<std::pair>:
         return &self | std::map(P::second);
 
 
-class list<T> inherits private std::list_base<T>:
-    public function is_empty(self: &auto) -> bool:
-        return self.size() == 0;
+class list<T> inherits public std::unsafe_list<T>:
+    public function list(mut self: &auto, T... elements):
+        list.super_classes[0](self, true, ...elements);
 
-    public function list(mut self: &auto):
-        ...
 
+    @override_method
+    public function resize(mut self: &auto, capacity: &std::number, value: T)
+    where !: self.size_f < self.capacity && self.size_b < self.capacity:
+        self.size_b == self.capacity ? self.resize_front(capacity // 2);
+        self.size_f == self.capacity ? self.resize_front(capacity // 2);
+
+    @override_method
+    public function resize(mut self: &auto, capacity: &std::number):
+        self.size_b == self.capacity ? self.resize_front(capacity);
+        self.size_f == self.capacity ? self.resize_front(capacity);
+
+
+    @override_method
+    public function emplace_back(mut self: &auto, value: T):
+        self.size_b == self.capacity ? self.resize_back()
+        self._emplace_back(value);
+
+    @override_method
+    public function emplace_front(mut self: &auto, value: T):
+        self.size_f == self.capacity ? self.resize_front();
+        self._emplace_front(value);
+
+    @override_method
+    public function emplace(mut self: &auto, index: &std::number, value: T):
+        self.resize();
+        self._emplace(index, value);
+
+
+    @override_method
+    public function pop_back(mut self: &auto) -> std::expected<T, std::error::range_error>:
+        return self.size_b == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop_back();
+
+    @override_method
+    public function pop_front(mut self: &auto) -> std::expected<T, std::error::range_error>:
+        return self.size_f == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop_front();
+
+    @override_method
+    public function pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
+        return self.size() == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop(index);
+
+
+class unsafe_list<T> inherits private std::list_base<T>:
     public function list(mut self: &auto, T... elements)
         self.emplace_back(elements)...;
 
 
+    @virtual_method
+    public function is_empty(self: &auto) -> bool:
+        return self.size() == 0;
+
+    @final_method
+    public function resize_back(mut self: &auto, capacity: &std::number = self.resize_algorithm(self.capacity)):
+        self._resize_back(capacity);
+
+    @final_method
+    public function resize_front(mut self: &auto, capacity: &std::number = self.resize_algorithm(self.capacity)):
+        self._resize_front(capacity);
+
+
+    @virtual_method
     public function emplace_back(mut self: &auto, value: T):
         self._emplace_back(value);
 
+    @virtual_method
     public function emplace_front(mut self: &auto, value: T):
         self._emplace_front(value);
 
+    @virtual_method
     public function emplace(mut self: &auto, index: &std::number, value: T):
         self._emplace(index, value);
 
 
+    @virtual_method
     public function pop_back(mut self: &auto) -> std::expected<T, std::error::range_error>:
         return self._pop_back();
 
+    @virtual_method
     public function pop_front(mut self: &auto) -> std::expected<T, std::error::range_error>:
         return self._pop_front();
 
+    @virtual_method
     public function pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
         return self._pop(index);
 
 
+    @virtual_method
     public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
         return self._at(index);
 
+    @virtual_method
     public function at_front(self: &auto) -> std::expected<T, std::error::range_error>:
         return self._at_front();
 
+    @virtual_method
     public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
         return self._at_back();
 
 
+# The list_base class is a private implementation detail of the list class. It contains a back and forward c array, to
+# allow for fast insertion and removal at the front and back of the list. There are no checks for inserting past the
+# end of the list, so the user must either explicitly check the size of the list, set the size explicitly, or use the
+# list class instead, which adds safety methods.
 class list_base<T>:
     typedef value_type_t = T
     typedef value_type_arr_t = #C_TYPE(T[])#
 
-    private data_f: value_type_arr_t = #C_INIT(T[])#;
-    private data_b: value_type_arr_t = #C_INIT(T[])#;
+    protected mut capacity: std::number = 4;
+    private data_f: value_type_arr_t;
+    private data_b: value_type_arr_t;
     private size_f: std::number = 0;
     private size_b: std::number = 0;
 
+
     public function list_base(mut self: &auto):
-        ...
+        self.data_f = std::c_malloc<#C_TYPE(T[])#>(self.capacity * T.size());
+        self.data_b = std::c_malloc<#C_TYPE(T[])#>(self.capacity * T.size());
 
 
     public function size(self: &auto) -> std::number:
         return self.size_f + self.size_b;
 
+    protected function _resize_algorithm(mut self: &auto, c: &number) -> std::number:
+        return c * 2;
+
+    private function _resize_back(mut self: &auto, capacity: &std::number):
+        self.data_b = std::c_realloc(self.data_b, capacity * T.size());
+
+    private function _resize_front_(mut self: &auto, capacity: &std::number):
+        self.data_f = std::c_realloc(self.data_f, capacity * T.size());
+
     public function clear(mut self: &auto):
-        self.data_f = #C_INIT(T[])#;
-        self.data_b = #C_INIT(T[])#;
+        self.data_f = std::c_malloc(4 * T.size());
+        self.data_b = std::c_malloc(4 * T.size());
         self.size_f = 0;
         self.size_b = 0;
 

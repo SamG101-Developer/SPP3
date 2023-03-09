@@ -1,0 +1,10 @@
+file std.string;
+
+
+import:
+    std.containers;
+
+
+class string<S=std::char> inherits public std::list<S>:
+where S: std::constraints::char_like:
+    ...

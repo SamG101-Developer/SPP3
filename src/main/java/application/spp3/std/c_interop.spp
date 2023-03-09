@@ -1,0 +1,15 @@
+file std.c_interop;
+
+
+# https://github.com/kuszmaul/SuperMalloc
+function c_malloc<T>(size: &number) -> #C_TYPE(T[])#:
+    return #C_CALL(static_cast<T*>(super_malloc(size)))#;
+
+function c_free<T>(ptr: #C_TYPE(T[])#) -> #C_TYPE(void)#:
+    return #C_CALL(free(ptr))#;
+
+function c_realloc<T>(ptr: #C_TYPE(T[])#, size: &number) -> #C_TYPE(T[])#:
+    ...
+
+function c_calloc<T>(count: &number, size: &number) -> #C_TYPE(T[])#:
+    ...
