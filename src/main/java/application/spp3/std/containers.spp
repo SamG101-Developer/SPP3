@@ -1,7 +1,7 @@
 file std.containers
 
 
-class map<K, V, P> inherits std::list<P<K, V>>
+class unsafe_map<K, V, P> inherits std::list<P<K, V>>
 where P: std::constraints::inherits<std::pair>:
     public function dict(mut self: &auto, pairer: P=std::pair<K, V>):
         ...
@@ -14,6 +14,8 @@ where P: std::constraints::inherits<std::pair>:
 
     public function values(self: &auto) -> std::list<V>:
         return &self | std::map(P::second);
+
+
 
 
 class list<T> inherits public std::unsafe_list<T>:
@@ -62,6 +64,26 @@ class list<T> inherits public std::unsafe_list<T>:
         return self.size() == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop(index);
 
 
+    @override_method
+    public function at_front(self: &auto) -> std::expected<T, std::error::range_error>:
+        return self.size_f == 0 ? std::err(std::error::range_error("Cannot access an empty list")) : self._at_front();
+
+    @override_method
+    public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
+        return self.size_b == 0 ? std::err(std::error::range_error("Cannot access an empty list")) : self._at_back();
+
+    @override_method
+    public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
+        return self.size() == 0 ? std::err(std::error::range_error("Cannot access an empty list")) : self._at(index);
+
+
+    @override_method
+    public function remove(self: &auto, value: T) -> std::expected<T, std::error::range_error>:
+        self.size() == 0 ? std::err(std::error::range_error("Cannot remove from an empty list"));
+        return self.contains(value) ? self._remove(self.index_of(value)) : std::err(std::error::range_error("Cannot remove a value that is not in the list"));
+
+
+
 class unsafe_list<T> inherits private std::list_base<T>:
     public function list(mut self: &auto, T... elements)
         self.emplace_back(elements)...;
@@ -71,11 +93,9 @@ class unsafe_list<T> inherits private std::list_base<T>:
     public function is_empty(self: &auto) -> bool:
         return self.size() == 0;
 
-    @final_method
     public function resize_back(mut self: &auto, capacity: &std::number = self.resize_algorithm(self.capacity)):
         self._resize_back(capacity);
 
-    @final_method
     public function resize_front(mut self: &auto, capacity: &std::number = self.resize_algorithm(self.capacity)):
         self._resize_front(capacity);
 
@@ -117,6 +137,11 @@ class unsafe_list<T> inherits private std::list_base<T>:
     @virtual_method
     public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
         return self._at_back();
+
+
+    @virtual_method
+    public function remove(self: &auto, value: &T) -> std::expected<T, std::error::range_error>:
+        return self._remove(value);
 
 
 # The list_base class is a private implementation detail of the list class. It contains a back and forward c array, to
@@ -255,14 +280,9 @@ class list_base<T>:
         return std::error(std::error::range_error("list::at_back: list is empty"));
 
 
-    private function _remove(mut self: &auto, element: &T) -> std::expected<T, std::error::range_error>
-    where !: self.contains(element):
-        let index = self.find(element);
-        return std::ok(self.pop(index));
 
     private function _remove(mut self: &auto, element: &T) -> std::expected<T, std::error::range_error>
-        return std::error(std::error::range_error("list::remove: element not found"));
-
+        return std::ok(self.pop(self.find(element)));
 
     public function contains(self: &auto, value: &T) -> bool:
         return std::binary_search(self | std::sort(), value).is_ok();
