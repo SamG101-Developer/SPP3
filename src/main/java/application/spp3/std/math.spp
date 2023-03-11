@@ -1,4 +1,4 @@
-file std.math;
+module std.math;
 
 
 import:

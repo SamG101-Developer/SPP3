@@ -1,4 +1,4 @@
-file std.algorithms;
+module std.algorithms;
 
 
 import:

@@ -1,4 +1,4 @@
-file std::number
+module std::number
 
 import:
     std.object;

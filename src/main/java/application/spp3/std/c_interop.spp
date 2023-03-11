@@ -1,4 +1,4 @@
-file std.c_interop;
+module std.c_interop;
 
 
 # https://github.com/kuszmaul/SuperMalloc
