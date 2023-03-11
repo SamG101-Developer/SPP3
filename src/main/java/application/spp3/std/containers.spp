@@ -97,6 +97,10 @@ class linked_list<T, N> inherits std::sequence<T>:
     public function count(self: &auto, item: &T) -> std::number:
         ...
 
+    @abstract_method
+    protected function node_at(self: &auto, index: &std::number) -> &N:
+        ...
+
 
 class single_linked_list_node<T>:
     friend single_linked_list<T>;
@@ -122,9 +126,7 @@ class single_linked_list<T> inherits std::linked_list<T, single_linked_list_node
 
     @override_method
     public function emplace(mut self: &auto, index: &std::number, item: T) -> void:
-        let mut node = self.head;
-        for i <- [0..index]:
-            node = node.next;
+        let node = self.node_at(index);
         node.next = single_linked_list_node(item, node.next);
 
     @override_method
@@ -136,36 +138,21 @@ class single_linked_list<T> inherits std::linked_list<T, single_linked_list_node
 
     @override_method
     public function pop_back(mut self: &auto) -> T:
-        let mut node = self.head;
-        while node.next.has_value():
-            node = node.next;
-        self.tail = node;
+        let node = self.tail;
+        self.tail = self.tail.prev;
         self.size -= 1;
         return node.value;
 
     @override_method
     public function pop(mut self: &auto, index: &std::number) -> T:
-        let mut node = self.head;
-        for i <- [0..index]:
-            node = node.next;
+        let node = self.node_at(index);
         self.size -= 1;
         return node.value;
-        
-    @override_method
-    public function at_front(self: &auto) -> &T:
-        return &self.head.value;
-        
-    @override_method
-    public function at_back(self: &auto) -> &T:
-        return &self.tail.value;
-        
+
     @override_method
     public function at(self: &auto, index: &std::number) -> &T:
-        let mut node = self.head;
-        for i <- [0..index]:
-            node = node.next;
-        return &node.value;
-        
+        return &self.node_at(index).value;
+
     @override_method
     public function remove(mut self: &auto, item: &T) -> T:
         let mut node = self.head;
@@ -174,7 +161,7 @@ class single_linked_list<T> inherits std::linked_list<T, single_linked_list_node
         node.next = node.next.next;
         self.size -= 1;
         return node.value;
-        
+
     @override_method
     public function index_of(self: &auto, item: &T) -> std::number:
         let mut node = self.head;
@@ -183,3 +170,133 @@ class single_linked_list<T> inherits std::linked_list<T, single_linked_list_node
             node = node.next;
             index += 1;
         return index;
+
+    @override_method
+    protected function node_at(self: &auto, index: &std::number) -> &single_linked_list_node<T>:
+        let mut node = self.head;
+        for i <- [0..index]:
+            node = node.next;
+        return &node;
+
+
+class double_linked_list_node<T> inherits single_linked_list_node<T>:
+    friend double_linked_list<T>;
+
+    protected constructor(value: T, next: std::optional<double_linked_list_node<T>> = std::none(), prev: std::optional<double_linked_list_node<T>> = std::none()):
+        single_linked_list_node(self, value, next):
+        this.prev = prev;
+
+    protected prev: std::optional<double_linked_list_node<T>>;
+
+
+class double_linked_list<T> inherits std::linked_list<T, double_linked_list_node<T>>:
+    @override_method
+    public function emplace_head(mut self: &auto, item: T) -> void:
+        self.head = double_linked_list_node(item, std::some(self.head), std::none());
+        self.size += 1;
+
+    @override_method
+    public function emplace_tail(mut self: &auto, item: T) -> void:
+        self.tail.next = double_linked_list_node(item, std::none(), std::some(self.tail));
+        self.size += 1;
+
+    @override_method
+    public function emplace(mut self: &auto, index: &std::number, item: T) -> void:
+        let node = self.at_node(index);
+        node.next = double_linked_list_node(item, node.next, std::some(node));
+        node.next.next.prev = node.next;
+        self.size += 1;
+
+    @override_method
+    public function pop_front(mut self: &auto) -> T:
+        let node = &self.head;
+        self.head = &self.head.next;
+        self.head.prev = std::none();
+        self.size -= 1;
+        return node.value;
+
+    @override_method
+    public function pop_back(mut self: &auto) -> T:
+        let node = &self.tail;
+        self.tail = self.tail.prev;
+        self.tail.next = std::none();
+        self.size -= 1;
+        return node.value;
+
+    @override_method
+    public function pop(mut self: &auto, index: &std::number) -> T:
+        let mut node = self.at(index);
+        node.prev.next = node.next;
+        node.next.prev = node.prev;
+        self.size -= 1;
+        return node.value;
+
+    @override_method
+    public function at(self: &auto, index: &std::number) -> &T:
+        return &self.at_node(index).value;
+
+    @override_method
+    public function at_node(self: &auto, index: &std::number) -> &double_linked_list_node<T>:
+        let mut node = &self.head;
+        if index <= self.size / 2:
+            for i <- [0..index]: node = &node.next;
+        else:
+            for i <- [0..self.size - index]: node = &node.prev;
+        return &node;
+
+
+class circular_linked_list<T> inherits single_linked_list<T>:
+    ...
+
+
+class circular_double_linked_list<T> inherits double_linked_list<T>:
+    ...
+
+
+class skip_list_node<T> inherits std::linked_list_node<T>:
+    ...
+
+
+class skip_list<T> inherits std::linked_list<T, skip_list_node<T>>:
+    ...
+
+
+@abstract_class
+class dynamic_array<T> inherits std::sequence<T>:
+    ...
+
+
+class vector<T> inherits dynamic_array<T>:
+    ...
+
+
+class array<T> inherits dynamic_array<T>:
+    ...
+
+
+class fixed_array<T> inherits dynamic_array<T>:
+    ...
+
+
+class set<T, B> inherits std::collection<T>:
+    ...
+
+
+class map<K, V, B> inherits std::collection<std::pair<K, V>>:
+    ...
+
+
+class stack<T> inherits std::base_collection<T>:
+    ...
+
+
+class max_stack<T> inherits std::stack<T>:
+    ...
+
+
+class queue<T> inherits std::base_collection<T>:
+    ...
+
+
+class priority_queue<T> inherits std::queue<T>:
+    ...

@@ -8,16 +8,76 @@ import:
 @static_class
 class compare:
     @static_method
-    def max<T, U>(a: &T, b: &U) -> T
-            T: std::constraints::mathematical && std::constraints::bitwise
-            U: std::constraints::mathematical && std::constraints::bitwise
-        let mask = (a - b) >> (std::math::bin_size(a) * 8 - 1);
-        return (a & ~mask) | (b & mask);
+    function max<T, U>(a: &T, b: &U) -> T where
+            T: std::constraints::mathematical && std::constraints::bitwise,
+            U: std::constraints::mathematical && std::constraints::bitwise:
+        let mask = (a - b) >> (std::math::bin_size(&a) * 8 - 1);
+        return (a & ~&mask) | (b & &mask);
 
 
     @static_method
-    def min<T, U>(a: &T, b: &U) -> T
-            T: std::constraints::mathematical && std::constraints::bitwise
-            U: std::constraints::mathematical && std::constraints::bitwise
-        let mask = (a - b) >> (std::math::bin_size(a) * 8 - 1);
-        return (a & mask) | (b & ~mask);
+    function max<T, U>(a: &T, b: &U) -> T
+    where T: std::constraints::gt_comparable_to<U>:
+        return a > &b ? a.clone() : b.clone();
+
+
+    @static_method
+    function min<T, U>(a: &T, b: &U) -> T where
+            T: std::constraints::mathematical && std::constraints::bitwise,
+            U: std::constraints::mathematical && std::constraints::bitwise:
+        let mask = (a - b) >> (std::math::bin_size(&a) * 8 - 1);
+        return (a & &mask) | (b & ~&mask);
+
+
+    @static_method
+    function min<T, U>(a: &T, b: &U) -> T
+    where T: std::constraints::lt_comparable_to<U>:
+        return a < &b ? a.clone() : b.clone();
+
+
+    @static_method
+    function clamp<T, U, V>(value: &T, min: &U, max: &V) -> T
+        return min(max(value, min), max);
+
+    @static_method
+    function between<T, U, V>(value: &T, min: &U, max: &V) -> std::bool
+        return min(max(value, min), max) == value;
+
+
+    @static_method
+    function eq<T, U>(a: &T, b: &U) -> bool
+    where T: std::constraints::eq_comparable_to<U>
+        return a == &b;
+
+    @static_method
+    function ne<T, U>(a: &T, b: &U) -> bool
+    where T: std::constraints::ne_comparable_to<U>
+        return a != &b;
+
+    @static_method
+    function gt<T, U>(a: &T, b: &U) -> bool
+    where T: std::constraints::gt_comparable_to<U>
+        return a > &b;
+
+    @static_method
+    function ge<T, U>(a: &T, b: &U) -> bool
+    where T: std::constraints::ge_comparable_to<U>
+        return a >= &b;
+
+    @static_method
+    function lt<T, U>(a: &T, b: &U) -> bool
+    where T: std::constraints::lt_comparable_to<U>
+        return a < &b;
+
+    @static_method
+    function le<T, U>(a: &T, b: &U) -> bool
+    where T: std::constraints::le_comparable_to<U>
+        return a <= &b;
+
+    @static_method
+    function cmp<T, U>(a: &T, b: &U) -> std::ord
+    where T: std::constraints::ord_comparable_to<U>
+        return a <=> &b;
+
+
+

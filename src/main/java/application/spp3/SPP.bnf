@@ -117,7 +117,7 @@ Program ::=
 ProgramContents ::=
     ModuleDefinition ImportBlock? EnumPrototype* ConstraintPrototype* ClassPrototype* FunctionPrototype* ExportBlock?
 ModuleDefinition ::=
-    KW_MODULE ModuleIdentifier
+    KW_MODULE ModuleIdentifier TK_EOL
 ModuleIdentifier ::=
     Identifier (TK_DOT Identifier)*
 
@@ -203,9 +203,9 @@ FunctionImplementation ::=
 ApplyConstraints ::=
     KW_WHERE ApplyTypeConstraints? ApplyValueConstraints?
 ApplyTypeConstraints ::=
-    ApplyTypeConstraint (ApplyTypeConstraint)*
+    ApplyTypeConstraint (AnotherItem ApplyTypeConstraint)*
 ApplyTypeConstraint ::=
-    Identifier TK_COLON TypeIdentifier (FunctionChain TypeIdentifier)* TK_EOL // TODO : Shouldn't use TypeIdentifier (don't want |)
+    Identifier TK_COLON TypeIdentifier (FunctionChain TypeIdentifier)* // TODO : Shouldn't use TypeIdentifier (don't want |)
 ApplyValueConstraints ::=
     Expression (AnotherItem Expression)*
 
@@ -290,7 +290,7 @@ ExpressionUnary ::=
 ExpressionPostfix ::=
     ExpressionPrimary (OperatorIdentifierPostfix)*
 ExpressionPrimary ::=
-    Literal | Identifier | ExpressionLambda | TK_LPAREN Expression TK_RPAREN
+    Literal | ScopedIdentifier | ExpressionLambda | TK_LPAREN Expression TK_RPAREN
 ExpressionLambda ::=
     TK_LBRACKET LambdaParameters TK_RBRACKET TK_ARROW Expression
 LambdaParameters ::=
