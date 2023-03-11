@@ -1,313 +1,185 @@
-file std.containers
+file std.containers;
 
 
-class unsafe_map<K, V, P> inherits std::list<P<K, V>>
-where P: std::constraints::inherits<std::pair>:
-    public function dict(mut self: &auto, pairer: P=std::pair<K, V>):
-        ...
+@abstract_class
+class base_collection<T>:
+    private size: std::number;
 
-    public function has_key(self: &auto, key: K) -> bool:
-        return self.keys().contains(key);
+    @abstract_method
+    public function length(self: &auto) -> std::number:
+        return this.size;
 
-    public function keys(self: &auto) -> std::list<K>:
-        return &self | std::map(P::first);
-
-    public function values(self: &auto) -> std::list<V>:
-        return &self | std::map(P::second);
-
-
-
-
-class list<T> inherits public std::unsafe_list<T>:
-    public function list(mut self: &auto, T... elements):
-        list.super_classes[0](self, true, ...elements);
-
-
-    @override_method
-    public function resize(mut self: &auto, capacity: &std::number, value: T)
-    where !: self.size_f < self.capacity && self.size_b < self.capacity:
-        self.size_b == self.capacity ? self.resize_front(capacity // 2);
-        self.size_f == self.capacity ? self.resize_front(capacity // 2);
-
-    @override_method
-    public function resize(mut self: &auto, capacity: &std::number):
-        self.size_b == self.capacity ? self.resize_front(capacity);
-        self.size_f == self.capacity ? self.resize_front(capacity);
-
-
-    @override_method
-    public function emplace_back(mut self: &auto, value: T):
-        self.size_b == self.capacity ? self.resize_back()
-        self._emplace_back(value);
-
-    @override_method
-    public function emplace_front(mut self: &auto, value: T):
-        self.size_f == self.capacity ? self.resize_front();
-        self._emplace_front(value);
-
-    @override_method
-    public function emplace(mut self: &auto, index: &std::number, value: T):
-        self.resize();
-        self._emplace(index, value);
-
-
-    @override_method
-    public function pop_back(mut self: &auto) -> std::expected<T, std::error::range_error>:
-        return self.size_b == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop_back();
-
-    @override_method
-    public function pop_front(mut self: &auto) -> std::expected<T, std::error::range_error>:
-        return self.size_f == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop_front();
-
-    @override_method
-    public function pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
-        return self.size() == 0 ? std::err(std::error::range_error("Cannot pop from an empty list")) : self._pop(index);
-
-
-    @override_method
-    public function at_front(self: &auto) -> std::expected<T, std::error::range_error>:
-        return self.size_f == 0 ? std::err(std::error::range_error("Cannot access an empty list")) : self._at_front();
-
-    @override_method
-    public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
-        return self.size_b == 0 ? std::err(std::error::range_error("Cannot access an empty list")) : self._at_back();
-
-    @override_method
-    public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
-        return self.size() == 0 ? std::err(std::error::range_error("Cannot access an empty list")) : self._at(index);
-
-
-    @override_method
-    public function remove(self: &auto, value: T) -> std::expected<T, std::error::range_error>:
-        self.size() == 0 ? std::err(std::error::range_error("Cannot remove from an empty list"));
-        return self.contains(value) ? self._remove(self.index_of(value)) : std::err(std::error::range_error("Cannot remove a value that is not in the list"));
-
-
-
-class unsafe_list<T> inherits private std::list_base<T>:
-    public function list(mut self: &auto, T... elements)
-        self.emplace_back(elements)...;
-
-
-    @virtual_method
+    @abstract_method
     public function is_empty(self: &auto) -> bool:
-        return self.size() == 0;
+        return this.size == 0;
 
-    public function resize_back(mut self: &auto, capacity: &std::number = self.resize_algorithm(self.capacity)):
-        self._resize_back(capacity);
-
-    public function resize_front(mut self: &auto, capacity: &std::number = self.resize_algorithm(self.capacity)):
-        self._resize_front(capacity);
-
-
-    @virtual_method
-    public function emplace_back(mut self: &auto, value: T):
-        self._emplace_back(value);
-
-    @virtual_method
-    public function emplace_front(mut self: &auto, value: T):
-        self._emplace_front(value);
-
-    @virtual_method
-    public function emplace(mut self: &auto, index: &std::number, value: T):
-        self._emplace(index, value);
-
-
-    @virtual_method
-    public function pop_back(mut self: &auto) -> std::expected<T, std::error::range_error>:
-        return self._pop_back();
-
-    @virtual_method
-    public function pop_front(mut self: &auto) -> std::expected<T, std::error::range_error>:
-        return self._pop_front();
-
-    @virtual_method
-    public function pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
-        return self._pop(index);
-
-
-    @virtual_method
-    public function at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
-        return self._at(index);
-
-    @virtual_method
-    public function at_front(self: &auto) -> std::expected<T, std::error::range_error>:
-        return self._at_front();
-
-    @virtual_method
-    public function at_back(self: &auto) -> std::expected<T, std::error::range_error>:
-        return self._at_back();
-
-
-    @virtual_method
-    public function remove(self: &auto, value: &T) -> std::expected<T, std::error::range_error>:
-        return self._remove(value);
-
-
-# The list_base class is a private implementation detail of the list class. It contains a back and forward c array, to
-# allow for fast insertion and removal at the front and back of the list. There are no checks for inserting past the
-# end of the list, so the user must either explicitly check the size of the list, set the size explicitly, or use the
-# list class instead, which adds safety methods.
-class list_base<T>:
-    typedef value_type_t = T
-    typedef value_type_arr_t = #C_TYPE(T[])#
-
-    protected mut capacity: std::number = 4;
-    private data_f: value_type_arr_t;
-    private data_b: value_type_arr_t;
-    private size_f: std::number = 0;
-    private size_b: std::number = 0;
-
-
-    public function list_base(mut self: &auto):
-        self.data_f = std::c_malloc<#C_TYPE(T[])#>(self.capacity * T.size());
-        self.data_b = std::c_malloc<#C_TYPE(T[])#>(self.capacity * T.size());
-
-
-    public function size(self: &auto) -> std::number:
-        return self.size_f + self.size_b;
-
-    protected function _resize_algorithm(mut self: &auto, c: &number) -> std::number:
-        return c * 2;
-
-    private function _resize_back(mut self: &auto, capacity: &std::number):
-        self.data_b = std::c_realloc(self.data_b, capacity * T.size());
-
-    private function _resize_front_(mut self: &auto, capacity: &std::number):
-        self.data_f = std::c_realloc(self.data_f, capacity * T.size());
-
-    public function clear(mut self: &auto):
-        self.data_f = std::c_malloc(4 * T.size());
-        self.data_b = std::c_malloc(4 * T.size());
-        self.size_f = 0;
-        self.size_b = 0;
-
-
-    private function _emplace_back(mut self: &auto, value: T):
-        self.data_b[&self.size_b] = value
-        self.size_b += 1
-
-    private function _emplace_front(mut self: &auto, value: T):
-        self.data_f[&self.size_f] = value
-        self.size_f += 1
-
-
-    private function _emplace(mut self: &auto, index: &std::number, value: T)
-    where !: index % self.size() < &self.size_f:
-        # insert into data_f
-        ...
-
-    private function _emplace(mut self: &auto, index: &std::number, value: T)
-    where ! index % self.size() >= &self.size_f:
-        # insert into data_b
-        ...
-
-    private function _emplace(self: &auto, index: &std::number, value: T):
-        self.emplace_back(value);
-
-
-    private function _pop_back(mut self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_b != 0:
-        self.size_b -= 1;
-        return std::ok(self.data_b[self.size_b - 1]);
-
-    private function _pop_back(mut self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_f != 0
-        self.size_f -= 1;
-        return std::ok(self.data_f[0]);
-
-    private function _pop_back(self: &auto) -> std::expected<T, std::error::range_error>
-        return std::error(std::error::range_error("list::pop_back: list is empty"));
-
-
-    private function _pop_front(mut self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_f != 0:
-        self.size_b -= 1;
-        return std::ok(self.data_b[0]);
-
-    private function _pop_front(mut self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_b != 0
-        self.size_f -= 1;
-        return std::ok(self.data_f[self.size_f - 1]);
-
-    private function _pop_front(self: &auto) -> std::expected<T, std::error::range_error>:
-        return std::error(std::error::range_error("list::pop_front: list is empty"));
-
-
-    private function _pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>
-    where index % self.size() < &self.size_f:
-        # pop from data_f
-        ...
-
-    private function _pop(mut self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
-        # pop from data_b
+    @abstract_method
+    public function clear(mut self: &auto) -> void:
         ...
 
 
-    private function _at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>
-    where !: index % self.size() < &self.size_f:
-        return std::ok(self.data_f[self.size_f - index % self.size_f]);
-
-    private function _at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>
-    where !: index % self.size() >= &self.size_f:
-        return std::ok(self.data_b[index % self.size_b]);
-
-    private function _at(self: &auto, index: &std::number) -> std::expected<T, std::error::range_error>:
-        return std::error(std::error::range_error("list::at: list is empty"));
-
-
-    private function _at_front(self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_f != 0:
-        return std::ok(self.data_f[self.size_f - 1]);
-
-    private function _at_front(self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_b != 0:
-            return std::ok(self.data_b[0]);
-
-    private function _at_front(self: &auto) -> std::expected<T, std::error::range_error>:
-            return std::error(std::error::range_error("list::at_front: list is empty"));
-
-
-    private function _at_back(self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self.size_b != 0:
-        return std::ok(self.data_b[self.size_b - 1]);
-
-    private function _at_back(self: &auto) -> std::expected<T, std::error::range_error>
-    where !: self._size_f != 0:
-        return std::ok(self.data_f[0]);
-
-    private function _at_back(self: &auto) -> std::expected<T, std::error::range_error>:
-        return std::error(std::error::range_error("list::at_back: list is empty"));
-
-
-
-    private function _remove(mut self: &auto, element: &T) -> std::expected<T, std::error::range_error>
-        return std::ok(self.pop(self.find(element)));
-
-    public function contains(self: &auto, value: &T) -> bool:
-        return std::binary_search(self | std::sort(), value).is_ok();
-
-
-    public function ...(self: &auto) -> T...:
-        # Get the T[] data somehow
+@abstract_class
+class collection<T> inherits std::base_collection<T>
+    @abstract_method
+    public function contains(self: &auto, item: &T) -> bool:
         ...
 
-    @class_method
-    public function<T, U>+(cls: &T, other: &U) -> T
-    where U: std::constraints::unpackable:
-        return cls.clone() += other;
+    @abstract_method
+    public function count(self: &auto, item: &T) -> bool:
+        ...
 
-    @class_method
-    public function<T, U>+=(cls: &mut T, other: &U) -> T
-    where U: std::constraints::unpackable:
-        cls.emplace_back(...other)...;
-        return cls;
 
-    @class_method
-    public function<T, U>|(cls: &mut T, other: &U) -> U::()::return_type
-    where U: std::constraints::callable:
-        return other(self)
+@abstract_class
+class sequence<T> inherits std::collection<T>:
+    @virtual_method
+    public function emplace_head(mut self: &auto, item: T) -> void:
+        self.emplace(0, item);
 
-    @unsafe
-    public function[](self: &auto, index: &std::number) -> T:
-        return self.data[&index]
+    @virtual_method
+    public function emplace_tail(mut self: &auto, item: T) -> void:
+        self.emplace(self.length(), item);
+
+    @abstract_method
+    public function emplace(mut self: &auto, index: &std::number, item: T) -> void:
+        ...
+
+    @virtual_method
+    public function pop_front(mut self: &auto) -> T:
+        self.pop(0);
+
+    @virtual_method
+    public function pop_back(mut self: &auto) -> T:
+        self.pop(self.length() - 1);
+
+    @abstract_method
+    public function pop(mut self: &auto, index: &std::number) -> T:
+        ...
+
+    @virtual_method
+    public function at_front(self: &auto) -> &T:
+        return self.at(0);
+
+    @virtual_method
+    public function at_back(self: &auto) -> &T:
+        return self.at(self.length() - 1);
+
+    @abstract_method
+    public function at(self: &auto) -> &T:
+        ...
+
+    @abstract_method
+    public function remove(mut self: &auto, item: &T) -> T:
+        self.pop(self.index_of(item));
+
+    @abstract_method
+    public function index_of(self: &auto, item: &T) -> std::number:
+        ...
+
+
+@abstract_class
+class linked_list<T, N> inherits std::sequence<T>:
+    private head: std::optional<N>;
+    private tail: std::optional<N>;
+
+    @override_method
+    public function is_empty(self: &auto) -> bool:
+        return !self.first.has_value();
+
+    @override_method
+    public function at_front(self: &auto) -> &T:
+        return &self.first.value;
+
+    @override_method
+    public function at_back(self: &auto) -> &T:
+        return &self.last.value;
+
+    @override_method
+    public function count(self: &auto, item: &T) -> std::number:
+        ...
+
+
+class single_linked_list_node<T>:
+    friend single_linked_list<T>;
+
+    protected constructor(value: T, next: std::optional<single_linked_list_node<T>> = std::none()):
+        this.value = value;
+        this.next = next;
+
+    protected value: T;
+    protected next: std::optional<single_linked_list_node<T>>;
+
+
+class single_linked_list<T> inherits std::linked_list<T, single_linked_list_node<T>>:
+    @override_method
+    public function emplace_head(mut self: &auto, item: T) -> void:
+        self.head = single_linked_list_node(item, self.head);
+        self.size += 1;
+
+    @override_method
+    public function emplace_tail(mut self: &auto, item: T) -> void:
+        self.tail.next = single_linked_list_node(item);
+        self.size += 1;
+
+    @override_method
+    public function emplace(mut self: &auto, index: &std::number, item: T) -> void:
+        let mut node = self.head;
+        for i <- [0..index]:
+            node = node.next;
+        node.next = single_linked_list_node(item, node.next);
+
+    @override_method
+    public function pop_front(mut self: &auto) -> T:
+        let node = self.head;
+        self.head = self.head.next;
+        self.size -= 1;
+        return node.value;
+
+    @override_method
+    public function pop_back(mut self: &auto) -> T:
+        let mut node = self.head;
+        while node.next.has_value():
+            node = node.next;
+        self.tail = node;
+        self.size -= 1;
+        return node.value;
+
+    @override_method
+    public function pop(mut self: &auto, index: &std::number) -> T:
+        let mut node = self.head;
+        for i <- [0..index]:
+            node = node.next;
+        self.size -= 1;
+        return node.value;
+        
+    @override_method
+    public function at_front(self: &auto) -> &T:
+        return &self.head.value;
+        
+    @override_method
+    public function at_back(self: &auto) -> &T:
+        return &self.tail.value;
+        
+    @override_method
+    public function at(self: &auto, index: &std::number) -> &T:
+        let mut node = self.head;
+        for i <- [0..index]:
+            node = node.next;
+        return &node.value;
+        
+    @override_method
+    public function remove(mut self: &auto, item: &T) -> T:
+        let mut node = self.head;
+        while node.next.has_value() && node.next.value() != item
+            node = node.next;
+        node.next = node.next.next;
+        self.size -= 1;
+        return node.value;
+        
+    @override_method
+    public function index_of(self: &auto, item: &T) -> std::number:
+        let mut node = self.head;
+        let mut index = 0;
+        while node.next.has_value() && node.next.value() != item:
+            node = node.next;
+            index += 1;
+        return index;
