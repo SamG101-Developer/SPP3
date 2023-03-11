@@ -1,0 +1,24 @@
+module std.file;
+
+
+import:
+    std.io -> io_abstract_input_stream, io_abstract_output_stream;
+    std.io.file -> file, file_reader, file_writer;
+
+
+class io_file_input_stream<T> : public std::io_abstract_input_stream<T>:
+    private file: file;
+    private file_reader: file_reader;
+
+    public io_file_input_stream(file: file):
+        this.file = file;
+        this.file_reader = file_reader(file);
+
+    @override
+    function read(self: &auto, mut buffer: &std::vector<T>, offset: &std::number, length: &std::number) -> std::number:
+        return self.file_reader.read(buffer, offset, length);
+
+    @override
+    function close(self: &auto) -> void:
+        self.file_reader.close();
+

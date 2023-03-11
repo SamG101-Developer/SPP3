@@ -1,15 +1,40 @@
 module std.c_interop;
 
 
-# https://github.com/kuszmaul/SuperMalloc
-function c_malloc<T>(size: &number) -> #C_TYPE(T[])#:
-    return #C_CALL(static_cast<T*>(super_malloc(size)))#;
+class c:
+    @static_method
+    function malloc<T>(size: &number) -> #C_TYPE(T*)#:
+        return #C_CALL((T*)malloc(size))#;
 
-function c_free<T>(ptr: #C_TYPE(T[])#) -> #C_TYPE(void)#:
-    return #C_CALL(free(ptr))#;
+    @static_method
+    function free<T>(ptr: #C_TYPE(T*)#) -> #C_TYPE(void)#:
+        return #C_CALL(free(ptr))#;
 
-function c_realloc<T>(ptr: #C_TYPE(T[])#, size: &number) -> #C_TYPE(T[])#:
-    ...
+    @static_method
+    function realloc<T>(ptr: #C_TYPE(T*)#, size: &number) -> #C_TYPE(T[])#:
+        return #C_CALL((T*)realloc(ptr, size))#;
 
-function c_calloc<T>(count: &number, size: &number) -> #C_TYPE(T[])#:
-    ...
+    @static_method
+    function calloc<T>(count: &number, size: &number) -> #C_TYPE(T[])#:
+        return #C_CALL((T*)calloc(count, size))#;
+
+    @static_method
+    function memcmp<T>(ptr1: #C_TYPE(T*)#, ptr2: #C_TYPE(T*)#, count: &number) -> &number:
+        return #C_CALL(memcmp(ptr1, ptr2, count))#;
+
+    @static_method
+    function memchr<T>(ptr: #C_TYPE(T*)#, value: &number, count: &number) -> #C_TYPE(T*)#:
+        return #C_CALL((T*)memchr(ptr, value, count))#;
+
+    @static_method
+    function memcpy<T>(dest: #C_TYPE(T*)#, src: #C_TYPE(T*)#, size: &number) -> #C_TYPE(T[])#:
+        return #C_CALL((T*)memcpy(dest, src, size))#;
+
+    @static_method
+    function memmove<T>(dest: #C_TYPE(T*)#, src: #C_TYPE(T*)#, size: &number) -> #C_TYPE(T[])#:
+        return #C_CALL((T*)memmove(dest, src, size))#;
+
+    @static_method
+    function memset<T>(dest: #C_TYPE(T*)#, value: &number, size: &number) -> #C_TYPE(T[])#:
+        return #C_CALL((T*)memset(dest, value, size))#;
+

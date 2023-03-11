@@ -1,0 +1,51 @@
+module io.spp;
+
+
+class io_abstract_stream<S>:
+    private S stream;
+
+    function constructor(mut self: &auto, S stream) -> void:
+        this.stream = stream;
+
+    function get_stream(self: &auto) -> &S:
+        return &stream;
+
+    @abstract_method
+    void close(mut self: &auto):
+        ...
+
+
+@abstract_class
+class io_abstract_input_stream<S> inherits io_abstract_stream<S>:
+    private S stream;
+
+    function constructor(mut self: &auto, S stream) -> io_input_stream<S>:
+        io_stream<S>(self, stream);
+
+    @abstract_method
+    function read(self: &auto, mut buffer: &std::vector<T>, offset: &std::number, length: &std::number) -> std::number:
+        ...
+
+    @abstract_method
+    function is_eof(self: &auto) -> bool:
+        ...
+
+
+@abstract_class
+class io_abstract_output_stream<S> inherits io_abstract_stream<S>:
+    private S stream;
+
+    function constructor(mut self: &auto, S stream) -> io_output_stream<S>:
+        io_stream<S>(self, stream);
+
+    @abstract_method
+    function write(self: &auto, std::number value) -> void:
+        ...
+
+    @abstract_method
+    function write(mut self: &auto, mut buffer: &std::vector<T>, offset: &std::number, length: &std::number) -> void:
+        ...
+
+    @abstract_method
+    function flush(self: &auto) -> void:
+        ...
