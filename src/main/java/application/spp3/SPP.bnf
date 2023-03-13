@@ -66,6 +66,7 @@
         TK_DECREMENT = "--"
         TK_AT = "@"
         TK_SPACESHIP = "<=>"
+        TK_PIPE = "|>"
 
         KW_MODULE = "module"
         KW_IMPORT = "import"
@@ -135,12 +136,14 @@ ExportDefinitions ::=
 
 NewLine ::=
     TK_NEWLINE
+EmptyImplementation ::=
+    TK_ELLIPSES
 
 
 ClassPrototype ::=
-    Decorators? KW_CLASS GenericIdentifier GenericInheritance? ApplyConstraints TK_COLON ClassImplementation
+    Decorators? KW_CLASS GenericIdentifier GenericInheritance? ApplyConstraints? TK_COLON ClassImplementation
 ClassImplementation ::=
-    ClassAttribute* ClassTypedefs* ClassFriends* ClassMethodPrototype*
+    (ClassAttribute* ClassTypedefs* ClassFriends* ClassMethodPrototype*) | EmptyImplementation
 ClassAttribute ::=
     AccessModifier? KW_MUT? Identifier TK_COLON TK_BITWISE_AND? TypeIdentifier (TK_ASSIGN Expression)? TK_EOL
 ClassTypedefs ::=
@@ -191,13 +194,13 @@ GenericInheritance ::=
 FunctionPrototype ::=
     Decorators? InnerFunctionPrototype
 InnerFunctionPrototype
-    ::= TK_ASYNC? FunctionType (GenericIdentifier | (OperatorIdentifier TypeGenericArguments)) TK_LPAREN FunctionParameters TK_RPAREN TK_ARROW TypeIdentifier ApplyConstraints TK_COLON FunctionImplementation
+    ::= TK_ASYNC? FunctionType (GenericIdentifier | (OperatorIdentifier TypeGenericArguments)) TK_LPAREN FunctionParameters? TK_RPAREN TK_ARROW TypeIdentifier ApplyConstraints? TK_COLON FunctionImplementation
 FunctionType ::=
     KW_FUNCTION | KW_GENERATOR
 FunctionChain ::=
     (TK_LOGICAL_OR | TK_LOGICAL_AND) TK_LOGICAL_NOT?
 FunctionImplementation ::=
-    StatementBlock
+    StatementBlock | EmptyImplementation
 
 
 ApplyConstraints ::=
@@ -205,7 +208,7 @@ ApplyConstraints ::=
 ApplyTypeConstraints ::=
     ApplyTypeConstraint (AnotherItem ApplyTypeConstraint)*
 ApplyTypeConstraint ::=
-    Identifier TK_COLON TypeIdentifier (FunctionChain TypeIdentifier)* // TODO : Shouldn't use TypeIdentifier (don't want |)
+    Identifiers TK_COLON TypeIdentifier (FunctionChain TypeIdentifier)* // TODO : Shouldn't use TypeIdentifier (don't want |)
 ApplyValueConstraints ::=
     Expression (AnotherItem Expression)*
 
@@ -230,18 +233,17 @@ FunctionCallNamedArgument ::=
 // parameter with a type. The optional parameters order doesn't matter if named arguments are used, but the required
 // parameters order does matter.
 FunctionParameters ::=
-    FunctionRequiredParameters (AnotherItem FunctionOptionalParameters)? | FunctionOptionalParameters
-FunctionRequiredParameters ::=
-    FunctionRequiredParameter (AnotherItem FunctionRequiredParameter)*
-FunctionOptionalParameters ::=
-    FunctionOptionalParameter (AnotherItem FunctionOptionalParameter)* | FunctionVariadicParameter
+    FunctionOptionalParameter (AnotherItem FunctionParameters2)? |
+    FunctionRequiredParameter (AnotherItem FunctionParameters)?
+FunctionParameters2 ::=
+    FunctionOptionalParameter (AnotherItem FunctionParameters2)? |
+    FunctionVariadicParameter
 FunctionRequiredParameter ::=
     KW_MUT? Identifier TK_COLON TK_BITWISE_AND? TypeIdentifier
-FunctionOptionalParameter ::= // TODO : Not working
+FunctionOptionalParameter ::=
     FunctionRequiredParameter TK_ASSIGN Expression
-FunctionVariadicParameter ::= // TODO : Not working (via FunctionOptionalParameter)
+FunctionVariadicParameter ::=
     FunctionRequiredParameter TK_ELLIPSES
-
 
 
 // Decorators are used to decorate the following item with additional information. They can decorate a function or a
@@ -254,7 +256,9 @@ Decorators ::=
 
 // Lowest precedence operators
 Expression ::=
-    ExpressionAssignment
+    ExpressionPartialPipe
+ExpressionPartialPipe ::=
+    ExpressionAssignment (TK_PIPE ExpressionPartialPipe)*
 ExpressionAssignment ::=
     ExpressionTernary (OperatorIdentifierAssignment ExpressionAssignment)*
 ExpressionTernary ::=
@@ -308,10 +312,22 @@ TypeIdentifier ::=
 TypeIdentifiers ::=
     TypeIdentifier (AnotherItem TypeIdentifier)*
 TypeGenericArguments ::=
-    TK_LESS_THAN TypeIdentifiers TK_GREATER_THAN
+    TK_LESS_THAN TypeGenericParameters TK_GREATER_THAN
 TypePostfix ::=
     (TK_DBL_COLON | TK_BITWISE_OR) TypeIdentifier
 
+TypeGenericParameters ::=
+    TypeGenericOptionalParameter (AnotherItem TypeGenericParameters2)? |
+    TypeGenericRequiredParameter (AnotherItem TypeGenericParameters)?
+TypeGenericParameters2 ::=
+    TypeGenericOptionalParameter (AnotherItem TypeGenericParameters2)? |
+    TypeGenericVariadicParameter
+TypeGenericRequiredParameter ::=
+    TypeIdentifier
+TypeGenericOptionalParameter ::=
+    TypeGenericRequiredParameter TK_ASSIGN TypeIdentifier
+TypeGenericVariadicParameter ::=
+    TypeGenericRequiredParameter TK_ELLIPSES
 
 
 // All statements - these are the statements that can be used in the language. They are technically expressions, as they
@@ -351,10 +367,14 @@ StatementVariableSingleDefinition ::=
     KW_LET KW_MUT? Identifier TK_ASSIGN (Expression | StatementIf | StatementMatch)
 StatementVariableMultipleDefinition ::=
     KW_LET KW_MUT? Identifiers TK_ASSIGN (Expression | StatementIf | StatementMatch)
+StatementListComprehensionFunction ::=
+    TK_LBRACKET Expression TK_FOR Identifier TK_REVERSE_ARROW Expression TK_RBRACKET
+StatementListComprehensionGenerator ::=
+    TK_LPAREN Expression TK_FOR Identifier TK_REVERSE_ARROW Expression TK_RPAREN
 Statement ::=
     StatementIf | StatementWhile | StatementFor | StatementDoWhile | StatementMatch | StatementReturn | StatementYield |
     StatementTypedef | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition TK_EOL) |
-    (Expression TK_EOL)
+    (StatementListComprehensionFunction TK_EOL) | (StatementListComprehensionGenerator TK_EOL) | (Expression TK_EOL)
 StatementBlock ::=
     Statement+
 
