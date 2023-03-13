@@ -139,7 +139,7 @@ ExportDefinitions ::=
     ((Identifier (Token_Comma Identifier)*) | Token_ExportAll) Token_EndLine
 
 
-EmptyImplementation ::= // TODO -> enum and constraint too
+EmptyImplementation ::=
     Token_Ellipses
 
 
@@ -297,7 +297,8 @@ TypeIdentifiers ::=
 TypeGenericArguments ::=
     Token_LeftAngle TypeGenericParameters Token_RightAngle
 TypePostfix ::=
-    (Token_ScopeAccessStatic | Token_TypeVariant) TypeIdentifier
+    (Token_TypeOptional | Token_TypeExpected)* (Token_ScopeAccessStatic | Token_TypeVariant) TypeIdentifier
+
 
 TypeGenericParameters ::=
     TypeGenericVariadicParameter |
@@ -559,6 +560,8 @@ Token_ReferenceToType ::= TK_AMPERSAND
 Token_LeftAngle ::= TK_LEFT_ANGLE
 Token_RightAngle ::= TK_RIGHT_ANGLE
 Token_TypeVariant ::= TK_VERTICAL_BAR
+Token_TypeOptional ::= TK_QUESTION_MARK
+Token_TypeExpected ::= TK_EXCLAMATION_MARK
 
 Token_ApplyValueConstraintsIdentifier ::= TK_EXCLAMATION_MARK
 Token_Iterate ::= TK_LEFT_ARROW
