@@ -5,107 +5,41 @@ import:
     std.constraints;
 
 
-class base_iterable_operation<F>:
-    protected f: F;
+# let m = std::vector(0, 1, 2, 3, 4, 5);
+# let n = m | std::filter(std::is_prime) | std::enumerate();
+# let n = std::enumerate(std::filter(std::is_prime, m));
 
-    @abstract_method
-    public function()<I>(self: &auto, iterable: I) -> auto
-    where I: std::iterable:
-        ...
-
-
-class filter<F> inherits private base_iterable_operation<F>:
-    public function filter(mut self: &auto, f: F) -> filter
-    where F: std::callable_has_number_params(1) && std::callable_returns<bool>:
-        self.f = f;
-        return self;
-
-    @override_method
-    public function()<I>(self: &auto, iterable: &I) -> mut I where
-            I: std::iterable;
-            F: std::callable_accepts<I::value_type>:
-
-        let mut filtered = I();
-        for element <- iterable:
-            self.f(&element) ? filtered.emplace_back(&element);
-        return filtered
+# std::filter(std::is_prime, m) === m |> std::filter(std::is_prime)
+# std::filter(std::is_prime) -> return partial function of the constructor std::filter
+# m |> std::filter(std::is_prime, _) |> std::map((x) -> x * 2, _) -> same as std::filter(std::is_prime)(m)
+# |> operator just calls the partial function with self as the only argument
 
 
-class transform<F> inherits private base_iterable_operation<F>:
-    public function transform(mut self: &auto, f: F) -> transform
-    where F: std::callable_has_number_params(1):
-        self.f = f
+@static_class
+class rng:
 
-    @override_method
-    public function()<I<T>>(self: &auto, iterable: &I<T>) -> I<F::return_type>
-            I: std::iterable;
-            F: std::callable_accepts<I::value_type>:
-
-        let mut transformed = I<F::return_type>();
-        for element <- iterable:
-            transformed.emplace_back(self.f(&element));
-        return transformed;
-
-
-class zip<I> inherits private base_iterable_operation<F>:
-    private rhs: &I;
-
-    public function zip(mut self: &auto, i: &I) -> zip
-    where I: std::constraints::iterable:
-        self.rhs = i;
-        return self;
-
-    @override_method
-    public function()<J, P=std::pair, M=std::map<I::value_type, J::value_type, P>>(self: &auto, lhs) -> T where
-            M: std::constraints::map_like && std::constraints::generics_match<I::value_type, J::value_type, P>;
-            P: std::constraints::inherits<std::pair>
+    @static_method
+    public generator chunk<I, J=I::value_type>(chunk_length: &std::number, iterable: &I) -> mut std::generator<J> where
+            I: std::constraints::iterable, I::value_type: std::constraints::iterable,
             J: std::constraints::iterable:
 
-        let mut zipped = M();
-        for index <- [0..std::cmp::min(i.size(), j.size())]:
-            zipped.emplace_back(&lhs[&index], &self.rhs[&index]);
-        return zipped;
+        for i <- [0..iterable.length(), chunk_length]):
+            yield iterable[index:index + chunk_length]
 
 
-class reverse:
-    public function reverse(&self: reverse) -> reverse:
-        return self;
+    @static_method
+    public generator filter<F, I>(function: F, iterable: &I) -> mut std::generator<I::value_type> where
+            I: std::constraints::iterable,
+            F: std::constraints::callable_accepts<I::value_type>:
 
-    @override_method
-    public function()<I>(self: &auto, iterable: &I) -> I where
-            I: std::constraints::iterable:
-
-        let mut reversed = I();
         for element <- iterable:
-            reversed.emplace_front(&element);
-        return reversed;
+            function(&element) ? yield &element;
 
 
-class concat:
-    private containers: std::list<&std::object>;
+    @static_method
+    public generator transform<F, I>(function: F, iterable: &I<T>) -> std::generator<F::return_type> where
+            I: std::constraints::iterable,
+            F: std::constraints::callable_accepts<I::value_type>:
 
-    public function concat(&self: concat, &T... containers) -> concat:
-        self.containers = [containers.as<std::object>()...];
-        return self;
-
-    @override_method
-    public function()<I, J>(self: &auto, lhs: &I) -> I
-    where I: std::constraints::iterable:
-        return lhs.clone() + ... + self.containers.as<I>()...;
-
-
-class slice:
-    private start: number;
-    private end: number;
-    private step: number;
-
-    public function slice(&self: slice, start: number, end: number, step: number) -> slice:
-        self.start = start;
-        self.end = end;
-        self.step = step;
-        return self;
-
-    @override_method
-    public function()<I>(self: &auto, i: &I) -> I
-    where I: std::constraints::iterable:
-        return i[self.start..self.end, self.step];
+        for element <- iterable:
+            yield self.f(&element);

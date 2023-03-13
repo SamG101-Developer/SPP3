@@ -42,6 +42,8 @@
 - Variadic generics -> generics can take a variable number of arguments
 - Variadic types (tuple) -> type can be a collection of types
 - Variadic function calls
+- `function f<T>(T...)` => all types same
+- `function f<T...>(T...)` => all types can be different
 
 
 ### Class model
@@ -64,6 +66,11 @@
 ### Functions
 - Closures -> lambda functions inherit the scope of the function they are defined in
 - Partial functions -> functions can be partially applied by passing placeholders
+- Pipe operator to chain functions -> `std::filter(std::is_prime, m)` -> `m |> std::filter(std::is_prime)`
+
+
+### Comprehensions
+- List comprehension -> `std::list<int> l = [x * 2 for x in range(10)]`
 
 
 ### Operator overloading
@@ -80,33 +87,34 @@
 |------------------|---------------------------------------------------------------------|
 | `?:`             | Ternary operator - Construct inline if statement with optional else |
 
-| Binary Operator | Description                                                         |
-|-----------------|---------------------------------------------------------------------|
-| `??`            | Null coalescing - Return left expression if not null, else right    |
-| `?:`            | Elvis operator - Return right expression if not null, else left     |
-| `&&`            | Logical AND - Logical AND of two expressions                        |
-| `&#124;&#124;`  | Logical OR - Logical OR of two expressions                          |
-| `=`             | Assignment - Assign right expression to left expression             |
-| `==`            | Equality - Check if two expressions are equal                       |
-| `!=`            | Inequality - Check if two expressions are not equal                 |
-| `<`             | Less than - Check if left expression is less than right expression  |
-| `>`             | Greater than - Check if left expression is greater than right       |
-| `<=`            | Less than or equal - Check if left expression is less than or equal |
-| `>=`            | Greater than or equal - Check if left expression is greater than or |
-| `+`             | Addition - Add two expressions                                      |
-| `-`             | Subtraction - Subtract two expressions                              |
-| `*`             | Multiplication - Multiply two expressions                           |
-| `/`             | Division - Divide two expressions                                   |
-| `%`             | Modulo - Modulo of two expressions                                  |
-| `**`            | Exponentiation - Exponentiate two expressions                       |
-| `//`            | Integer division - Divide two expressions                           |
-| `&`             | Bitwise AND - Bitwise AND of two expressions                        |
-| `&#124;`        | Bitwise OR - Bitwise OR of two expressions                          |
-| `^`             | Bitwise XOR - Bitwise XOR of two expressions                        |
-| `<<`            | Bitwise left shift - Bitwise left shift of two expressions          |
-| `>>`            | Bitwise right shift - Bitwise right shift of two expressions        |
-| `<<<`           | Bitwise left rotate - Bitwise left rotate of two expressions        |
-| `>>>`           | Bitwise right rotate - Bitwise right rotate of two expressions      |
+| Binary Operator | Description                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| `??`            | Null coalescing - Return left expression if not null, else right            |
+| `?:`            | Elvis operator - Return right expression if not null, else left             |
+| `&&`            | Logical AND - Logical AND of two expressions                                |
+| `&#124;&#124;`  | Logical OR - Logical OR of two expressions                                  |
+| `=`             | Assignment - Assign right expression to left expression                     |
+| `==`            | Equality - Check if two expressions are equal                               |
+| `!=`            | Inequality - Check if two expressions are not equal                         |
+| `<`             | Less than - Check if left expression is less than right expression          |
+| `>`             | Greater than - Check if left expression is greater than right               |
+| `<=`            | Less than or equal - Check if left expression is less than or equal         |
+| `>=`            | Greater than or equal - Check if left expression is greater than or         |
+| `+`             | Addition - Add two expressions                                              |
+| `-`             | Subtraction - Subtract two expressions                                      |
+| `*`             | Multiplication - Multiply two expressions                                   |
+| `/`             | Division - Divide two expressions                                           |
+| `%`             | Modulo - Modulo of two expressions                                          |
+| `**`            | Exponentiation - Exponentiate two expressions                               |
+| `//`            | Integer division - Divide two expressions                                   |
+| `&`             | Bitwise AND - Bitwise AND of two expressions                                |
+| `&#124;`        | Bitwise OR - Bitwise OR of two expressions                                  |
+| `^`             | Bitwise XOR - Bitwise XOR of two expressions                                |
+| `<<`            | Bitwise left shift - Bitwise left shift of two expressions                  |
+| `>>`            | Bitwise right shift - Bitwise right shift of two expressions                |
+| `<<<`           | Bitwise left rotate - Bitwise left rotate of two expressions                |
+| `>>>`           | Bitwise right rotate - Bitwise right rotate of two expressions              |
+| `&#124>;`       | Pipe function operator - Pipe the left expression into the right expression |
 
 | Unary Operator | Description                                      |
 |----------------|--------------------------------------------------|
@@ -327,7 +335,9 @@
   to run the function asynchronously.
 
 
-- `ignore`
+- `yield` - Yield a value from a generator. The function will return a generator type wrapping the actual value, 
+  and the generator can be iterated over to get the value. The function can be used with the `for` keyword to 
+  iterate over the generator.
 
 
 ### Predefined decorators
@@ -365,6 +375,29 @@
     still access static members of the class, but cannot access instance members.
   - `@virtual_method @override_method` - Define a virtual method that is being overridden, but can be overridden again. 
     The method can still access static members of the class, and can access instance members.
+
+---
+
+
+# Standard Libary
+
+### algorithms.spp
+- The algorithms library contains a number of useful algorithms that can be used to manipulate data. The algorithms 
+  are all implemented as generic functions, and can be used with any type that implements the `[]` operator. They 
+  work by defining structs and overloading the `()` operator as a generator, so that the algorithms only return data 
+  as it is needed.
+
+
+- Algorithms defined include things such as transforms, filters, reversing etc; they are defined as structs not 
+  member functions, so that they can be used with any type that implements the `[]` operator. The data type that is 
+  iterated over is encouraged to implement the pipe operator `|` to allow for chaining of algorithms. For example 
+  with a std::vector<T>, you can do `vector | filter(...) | transform(...) | reverse()`.
+
+
+- The algorithms use a simple generator pattern that can easily be copied and re-implemented for user defined 
+  structs. A base class is provided too, with abstract methods that must be implemented. This forces all the user 
+  defined algorithms to conform to the same interface.
+
 
 ---
 

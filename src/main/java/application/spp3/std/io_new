@@ -1,0 +1,62 @@
+module std.io;
+
+
+class stream_base:
+
+    @virtual_method
+    public function good() -> bool:
+        return !fail() && !bad();
+
+    @abstract_method
+    public function fail() -> bool:
+        return false;
+
+    @abstract_method
+    public function bad() -> bool:
+        return false;
+
+    @abstract_method
+    public function eof() -> bool:
+        return false;
+
+    @abstract_method
+    public function clear() -> void:
+        ...
+
+
+class input_stream<C> inherits stream_base:
+    @abstract_method
+    public function get(C) -> &input_stream<C>:
+        ...
+
+    @abstract_method
+    public function write(std::string<C>) -> &input_stream<C>:
+        ...
+
+
+class output_stream inherits stream_base:
+    @abstract_method
+    public function put(character: C) -> &input_stream<C>:
+        ...
+
+    @abstract_method
+    public function write(std::string<C>) -> &input_stream<C>:
+        ...
+
+
+class console_stream<C> inherits input_stream<C>, output_stream<C>:
+    @override
+    public function get(C) -> &input_stream<C>:
+        ...
+
+    @override
+    public function read(std::string<C>) -> &input_stream<C>:
+        ...
+
+    @override
+    public function put(character: C) -> &input_stream<C>:
+        ...
+
+    @override
+    public function write(std::string<C>) -> &input_stream<C>:
+        ...

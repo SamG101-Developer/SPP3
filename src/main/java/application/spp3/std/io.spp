@@ -1,29 +1,19 @@
 module io.spp;
 
 
-class io_abstract_stream<S>:
-    private S stream;
-
-    function constructor(mut self: &auto, S stream) -> void:
-        this.stream = stream;
-
-    function get_stream(self: &auto) -> &S:
-        return &stream;
-
+class io_abstract_stream<T>:
     @abstract_method
     void close(mut self: &auto):
         ...
 
 
 @abstract_class
-class io_abstract_input_stream<S> inherits io_abstract_stream<S>:
-    private S stream;
-
-    function constructor(mut self: &auto, S stream) -> io_input_stream<S>:
-        io_stream<S>(self, stream);
+class io_abstract_input_stream<T> inherits io_abstract_stream<T>:
+    function constructor(self: &auto) -> io_input_stream<T>:
+        return self;
 
     @abstract_method
-    function read(self: &auto, mut buffer: &std::vector<T>, offset: &std::number, length: &std::number) -> std::number:
+    function read() -> std::number:
         ...
 
     @abstract_method
@@ -32,20 +22,67 @@ class io_abstract_input_stream<S> inherits io_abstract_stream<S>:
 
 
 @abstract_class
-class io_abstract_output_stream<S> inherits io_abstract_stream<S>:
-    private S stream;
-
-    function constructor(mut self: &auto, S stream) -> io_output_stream<S>:
-        io_stream<S>(self, stream);
+class io_abstract_output_stream<T> inherits io_abstract_stream<T>:
+    function constructor(self: &auto) -> io_output_stream<T>:
+        return self;
 
     @abstract_method
-    function write(self: &auto, std::number value) -> void:
-        ...
-
-    @abstract_method
-    function write(mut self: &auto, mut buffer: &std::vector<T>, offset: &std::number, length: &std::number) -> void:
+    function write(self: &auto, T value) -> void:
         ...
 
     @abstract_method
     function flush(self: &auto) -> void:
         ...
+
+
+class io_console_input_stream<T> inherits io_abstract_input_stream<T>:
+    private mut underlying: std::console;
+
+    function constructor(self: &auto) -> io_console_input_stream:
+        return self;
+
+    function is_eof(self: &auto) -> bool:
+        return #C_CALL(feof(self.console.stdin().c_type()))#;
+
+    @override_method
+    function read(self: &auto) -> T:
+        return #C_CALL((T)getchar())#;
+
+    @override_method
+    function close(self: &auto) -> void:
+        return #C_CALL(fclose())#;
+
+
+class io_console_output_stream<T> inherits io_abstract_output_stream<T>:
+    private mut underlying: std::console;
+
+    function constructor(self: &auto) -> io_console_output_stream:
+        return self;
+
+    @override_method
+    function write(self: &auto, T value) -> void:
+        return #C_CALL(putchar((int)value))#;
+
+    @override_method
+    function flush(self: &auto) -> void:
+        return #C_CALL(fflush(self.console.stdout().c_type()))#;
+
+    @override_method
+    function close(self: &auto) -> void:
+        return #C_CALL(fclose(self.console.stdout().c_type()))#;
+
+
+class io_file_input_stream<T> inherits io_abstract_input_stream<T>:
+    private mut underlying: std::file;
+
+    function constructor(self: &auto, std::string filename) -> io_file_input_stream:
+        self.file = std::file(filename, "r");
+        return self;
+
+    function constructor(self: &auto, std::file file) -> io_file_input_stream:
+        self.file = file;
+        return self;
+
+    @override_method
+    function read(self: &auto) -> T:
+        return #C_CALL((T)fgetc(self.file.c_type()))#;
