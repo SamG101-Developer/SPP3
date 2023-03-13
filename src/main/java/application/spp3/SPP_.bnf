@@ -1,0 +1,571 @@
+{
+    parserClass = "application.spp3.SPPParser"
+    parserUtilClass = "application.spp3.SPPParserUtil"
+    extends = "com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix = "SPP"
+    psiImplClassSuffix = "Impl"
+    psiPackage = "application.spp3.psi"
+    psiImplPackage = "application.spp3.psi.impl"
+
+    elementTypeHolderClass = "application.spp3.SPPTypes"
+    elementTypeClass = "application.spp3.SPPElementType"
+    tokenTypeClass = "application.spp3.SPPTokenType"
+
+    tokens = [
+        space = "regexp:\s+"
+        comment = "regexp:#.*"
+
+        TK_NEWLINE = "regexp:[\r\n]+"
+
+        TK_DOT = "."
+        TK_COLON = ":"
+        TK_COMMA = ","
+        TK_EQUAL = "="
+        TK_AMPERSAND = "&"
+        TK_VERTICAL_BAR = "|"
+        TK_HAT = "^"
+        TK_TILDE = "~"
+        TK_DOUBLE_LEFT_ANGLE = "<<"
+        TK_DOUBLE_RIGHT_ANGLE = ">>"
+        TK_TRIPLE_LEFT_ANGLE = "<<<"
+        TK_TRIPLE_RIGHT_ANGLE = ">>>"
+        TK_DOUBLE_AMPERSAND = "&&"
+        TK_DOUBLE_VERTICAL_BAR = "||"
+        TK_EXCLAMATION_MARK = "!"
+        TK_LEFT_ANGLE = "<"
+        TK_RIGHT_ANGLE = ">"
+        TK_DOUBLE_COLON = "::"
+        TK_LEFT_PARENTHESIS = "("
+        TK_RIGHT_PARENTHESIS = ")"
+        TK_LEFT_BRACKET = "["
+        TK_RIGHT_BRACKET = "]"
+        TK_LEFT_BRACE = "{"
+        TK_RIGHT_BRACE = "}"
+        TK_QUESTION_MARK = "?"
+        TK_DOUBLE_DOT = ".."
+        TK_TRIPLE_DOT = "..."
+        TK_DOUBLE_EQUALS = "=="
+        TK_EXCLAMATION_MARK_EQUALS = "!="
+        TK_LEFT_ANGLE_EQUALS = "<="
+        TK_RIGHT_ANGLE_EQUALS = ">="
+        TK_PLUS = "+"
+        TK_HYPHEN = "-"
+        TK_ASTERISK = "*"
+        TK_FORWARD_SLASH = "/"
+        TK_DOUBLE_FORWARD_SLASH = "//"
+        TK_PERCENT = "%"
+        TK_DOUBLE_ASTERISK = "**"
+        TK_DOUBLE_QUESTION_MARK = "??"
+        TK_QUESTION_MARK_COLON = "?:"
+        TK_RIGHT_ARROW = "->"
+        TK_DOUBLE_ARROW = "<->"
+        TK_LEFT_ARROW = "<-"
+        TK_DOUBLE_PLUS = "++"
+        TK_DOUBLE_HYPHEN = "--"
+        TK_AT = "@"
+        TK_DOUBLE_FAT_ARROW = "<=>"
+        TK_PIPE = "|>"
+        TK_SEMI_COLON = ";"
+        TK_QUESTION_MARK_DOT = "?."
+
+        KW_MODULE = "module"
+        KW_IMPORT = "import"
+        KW_EXPORT = "export"
+        KW_ENUM = "enum"
+        KW_INHERITS = "inherits"
+        KW_PUBLIC = "public"
+        KW_PROTECTED = "protected"
+        KW_PRIVATE = "private"
+        KW_PACKAGED = "packaged"
+        KW_CONSTRAINT = "constraint"
+        KW_ASYNC = "async"
+        KW_FUNCTION = "function"
+        KW_GENERATOR = "generator"
+        KW_MUT = "mut"
+        KW_LET = "let"
+        KW_IF = "if"
+        KW_ELSE = "else"
+        KW_WHILE = "while"
+        KW_FOR = "for"
+        KW_DO = "do"
+        KW_MATCH = "match"
+        KW_CASE = "case"
+        KW_RETURN = "return"
+        KW_YIELD = "yield"
+        KW_CLASS = "class"
+        KW_TYPEDEF = "typedef"
+        KW_THREAD = "thread"
+        KW_DEFER = "defer"
+        KW_AWAIT = "await"
+        KW_FRIEND = "friend"
+        KW_WHERE = "where"
+        KW_TRUE = "true"
+        KW_FALSE = "false"
+
+        LE_IDENTIFIER = "regexp:[a-zA-Z_][a-zA-Z0-9_]*"
+        LE_BIN_DIGITS = "regexp:0b[0-1]+"
+        LE_HEX_DIGITS = "regexp:0x[0-9a-fA-F]+"
+        LE_DEC_DIGITS = "regexp:[0-9]+"
+        LE_DOUBLE_QUOTE_STRING = "regexp:\".*\""
+        LE_SINGLE_QUOTE_CHARACTER = "regexp:'.?'"
+        LE_REGEX = "regexp:r\".*\""
+    ]
+}
+
+
+Program ::=
+    ProgramContents <<eof>>
+ProgramContents ::=
+    ModuleDefinition ImportBlock? (EnumPrototype | ConstraintPrototype | ClassPrototype | FunctionPrototype)* ExportBlock?
+ModuleDefinition ::=
+    KW_MODULE ModuleIdentifier Token_EndLine
+ModuleIdentifier ::=
+    Identifier (Token_ScopeAccessDot Identifier)*
+
+
+// TODO : Relative module imports not working
+ImportBlock ::=
+    KW_IMPORT Token_StartBlock ImportDefinitions
+ImportDefinitions ::=
+    (ImportDefinition Token_EndLine)+
+ImportDefinition ::=
+    Token_AccessRelativeModule* ModuleIdentifier Token_ImportGetClasses (Identifiers | Token_ImportAll)
+
+
+ExportBlock ::=
+    KW_EXPORT Token_StartBlock ExportDefinitions
+ExportDefinitions ::=
+    ((Identifier (Token_Comma Identifier)*) | Token_ExportAll) Token_EndLine
+
+
+EmptyImplementation ::= // TODO -> enum and constraint too
+    Token_Ellipses
+
+
+ClassPrototype ::=
+    Decorators? KW_CLASS GenericIdentifier GenericInheritance? ApplyConstraints? Token_StartBlock ClassImplementation
+ClassImplementation ::=
+    EmptyImplementation | (ClassAttribute | ClassTypedefs | ClassFriends | ClassMethodPrototype)+
+ClassAttribute ::=
+    AccessModifier? KW_MUT? Identifier Token_TypeHint TypeIdentifier (Token_Assign Expression)? Token_EndLine
+ClassTypedefs ::=
+    AccessModifier? StatementTypedef
+ClassFriends ::=
+    AccessModifier? KW_FRIEND TypeIdentifier Token_EndLine
+ClassMethodPrototype ::=
+    Decorators? AccessModifier? FunctionInnerPrototype
+AccessModifier ::=
+    KW_PUBLIC | KW_PRIVATE | KW_PROTECTED | KW_PACKAGED
+
+
+EnumPrototype ::=
+    KW_ENUM Identifier Inheritance? Token_StartBlock EnumMembers
+EnumMembers ::=
+    EmptyImplementation | EnumMember (Token_Comma EnumMember)* Token_EndLine
+EnumMember ::=
+    Identifier (Token_Assign Expression)?
+
+
+ConstraintPrototype ::=
+    KW_CONSTRAINT GenericIdentifier GenericInheritance? Token_StartBlock ConstraintMembers
+ConstraintMembers ::=
+    EmptyImplementation | (ConstraintMember Token_EndLine)+
+ConstraintMember ::=
+    TypeIdentifier ConstraintFunctionTypeParameters? Token_ReturnType ConstraintFunctionReturnType |
+    TypeIdentifier GenericInheritance |
+    TypeIdentifier FunctionCallArguments
+ConstraintFunctionTypeParameters ::=
+    Token_LeftParenthesis (ConstraintUnknownType | TypeIdentifiers)? Token_RightParenthesis
+ConstraintFunctionReturnType ::=
+    TypeIdentifier | ConstraintUnknownType
+ConstraintUnknownType ::=
+    TK_QUESTION_MARK
+
+
+Inheritance ::=
+    KW_INHERITS AccessModifier? ScopedIdentifier (Token_Comma AccessModifier? ScopedIdentifier)*
+GenericInheritance ::=
+    KW_INHERITS AccessModifier? TypeIdentifier (Token_Comma AccessModifier? TypeIdentifier)*
+
+
+FunctionPrototype ::=
+    Decorators? FunctionInnerPrototype
+FunctionInnerPrototype
+    ::= KW_ASYNC? FunctionType (GenericIdentifier | (OperatorIdentifier TypeGenericArguments)) Token_LeftParenthesis FunctionParameters? Token_RightParenthesis Token_ReturnType TypeIdentifier ApplyConstraints? Token_StartBlock FunctionImplementation
+FunctionType ::=
+    KW_FUNCTION | KW_GENERATOR
+FunctionImplementation ::=
+    StatementBlock | EmptyImplementation
+
+
+ApplyConstraints ::=
+    KW_WHERE (ApplyTypeConstraints | ApplyValueConstraints) | (ApplyTypeConstraints ApplyValueConstraints)
+ApplyTypeConstraints ::=
+    ApplyTypeConstraint (Token_Comma ApplyTypeConstraint)*
+ApplyTypeConstraint ::=
+    Identifiers Token_TypeHint TypeIdentifier (ApplyConstraintChainOperator TypeIdentifier)*
+ApplyValueConstraints ::=
+    Token_ApplyValueConstraintsIdentifier Token_TypeHint Expression (Token_Comma Expression)*
+ApplyConstraintChainOperator ::=
+    (Token_LogicalOr | Token_LogicalAnd) Token_LogicalNot?
+
+
+FunctionCallArguments ::=
+    (FunctionCallNormalArguments (Token_Comma FunctionCallNamedArguments)?) | FunctionCallNamedArguments
+FunctionCallNormalArguments ::=
+    FunctionCallNormalArgument (Token_Comma FunctionCallNormalArgument)*
+FunctionCallNamedArguments ::=
+    FunctionCallNamedArgument (Token_Comma FunctionCallNamedArgument)*
+FunctionCallNormalArgument ::=
+    Expression
+FunctionCallNamedArgument ::=
+    Identifier Token_Assign FunctionCallNormalArgument
+    
+    
+FunctionParameters ::=
+    FunctionVariadicParameter |
+    FunctionOptionalParameter (Token_Comma FunctionParameters2)? |
+    FunctionRequiredParameter (Token_Comma FunctionParameters)?
+FunctionParameters2 ::=
+    FunctionOptionalParameter (Token_Comma FunctionParameters2)? |
+    FunctionVariadicParameter
+FunctionRequiredParameter ::=
+    KW_MUT? Identifier Token_TypeHint TypeIdentifier
+FunctionOptionalParameter ::=
+    FunctionRequiredParameter Token_Assign Expression
+FunctionVariadicParameter ::=
+    FunctionRequiredParameter OperatorIdentifierVariadic
+
+
+Decorator ::=
+    Token_Decorator ScopedIdentifier PostfixFunctionCallOperator?
+Decorators ::=
+    Decorator (Token_NewLine Decorator)*
+
+
+Expression ::=
+    ExpressionPartialPipe
+ExpressionPartialPipe ::=
+    ExpressionAssignment (Token_PipeToFunction ExpressionPartialPipe)*
+ExpressionAssignment ::=
+    ExpressionTernary (OperatorIdentifierAssignment ExpressionAssignment)*
+ExpressionTernary ::=
+    ExpressionNullCoalescence (Token_TernaryLHS Expression (Token_TernaryRHS ExpressionTernary)?)*
+ExpressionNullCoalescence ::=
+    ExpressionLogicalOr (OperatorIdentifierNullCoalescing ExpressionNullCoalescence)*
+ExpressionLogicalOr ::=
+    ExpressionLogicalAnd (Token_LogicalOr ExpressionLogicalOr)*
+ExpressionLogicalAnd ::=
+    ExpressionBitwiseOr (Token_LogicalAnd ExpressionLogicalAnd)*
+ExpressionBitwiseOr ::=
+    ExpressionBitwiseXor (Token_BitwiseOr ExpressionBitwiseOr)*
+ExpressionBitwiseXor ::=
+    ExpressionBitwiseAnd (Token_BitwiseXor ExpressionBitwiseXor)*
+ExpressionBitwiseAnd ::=
+    ExpressionEquality (Token_BitwiseAnd ExpressionBitwiseAnd)*
+ExpressionEquality ::=
+    ExpressionRelational (OperatorIdentifierEquality ExpressionEquality)*
+ExpressionRelational ::=
+    ExpressionShift (OperatorIdentifierRelational ExpressionRelational)*
+ExpressionShift ::=
+    ExpressionRotate (OperatorIdentifierShift ExpressionShift)*
+ExpressionRotate ::=
+    ExpressionAdditive (OperatorIdentifierRotate ExpressionRotate)*
+ExpressionAdditive ::=
+    ExpressionMultiplicative (OperatorIdentifierAdditive ExpressionAdditive)*
+ExpressionMultiplicative ::=
+    ExpressionExponentiation (OperatorIdentifierMultiplicative ExpressionMultiplicative)*
+ExpressionExponentiation ::=
+    ExpressionUnary (OperatorIdentifierExponentiation ExpressionExponentiation)*
+ExpressionUnary ::=
+    (OperatorIdentifierUnary ExpressionUnary) | ExpressionPostfix
+ExpressionPostfix ::=
+    ExpressionPrimary (OperatorIdentifierPostfix)*
+ExpressionPrimary ::=
+    Literal | ScopedIdentifier | ExpressionLambda | Token_LeftParenthesis Expression Token_RightParenthesis
+ExpressionLambda ::=
+    KW_ASYNC? Token_LeftParenthesis LambdaParameters Token_RightParenthesis Token_ReturnType Expression
+LambdaParameters ::=
+    Token_LeftParenthesis Identifier (Token_Comma Identifier)* Token_RightParenthesis
+    
+
+TypeIdentifier ::=
+    Token_ReferenceToType? ScopedIdentifier TypeGenericArguments? TypePostfix?
+TypeIdentifiers ::=
+    TypeIdentifier (Token_Comma TypeIdentifier)*
+TypeGenericArguments ::=
+    Token_LeftAngle TypeGenericParameters Token_RightAngle
+TypePostfix ::=
+    (Token_ScopeAccessStatic | Token_TypeVariant) TypeIdentifier
+
+TypeGenericParameters ::=
+    TypeGenericVariadicParameter |
+    TypeGenericOptionalParameter (Token_Comma TypeGenericParameters2)? |
+    TypeGenericRequiredParameter (Token_Comma TypeGenericParameters)?
+TypeGenericParameters2 ::=
+    TypeGenericOptionalParameter (Token_Comma TypeGenericParameters2)? |
+    TypeGenericVariadicParameter
+TypeGenericRequiredParameter ::=
+    TypeIdentifier
+TypeGenericOptionalParameter ::=
+    TypeGenericRequiredParameter Token_Assign TypeIdentifier
+TypeGenericVariadicParameter ::=
+    TypeGenericRequiredParameter OperatorIdentifierVariadic
+    
+    
+StatementIf ::=
+    KW_IF StatementConditionExpressions? ExpressionCondition Token_StartBlock StatementBlock StatementElse?
+StatementElse ::=
+    KW_ELSE (StatementIf | (Token_StartBlock StatementBlock))
+StatementWhile ::=
+    KW_WHILE StatementConditionExpressions? ExpressionCondition Token_StartBlock StatementBlock
+StatementFor ::=
+    KW_FOR StatementConditionExpressions? ExpressionFor Token_StartBlock StatementBlock
+StatementDoWhile ::=
+    KW_DO Token_StartBlock StatementBlock KW_WHILE ExpressionCondition Token_EndLine
+StatementMatch ::=
+    KW_MATCH StatementConditionExpressions? ExpressionCondition Token_StartBlock StatementCase* StatementCaseDefault
+StatementCase ::=
+    KW_CASE StatementConditionExpressions? ExpressionCondition Token_StartBlock StatementBlock
+StatementCaseDefault ::=
+    KW_CASE Token_MatchAll Token_StartBlock StatementBlock
+StatementReturn ::=
+    KW_RETURN Expression Token_EndLine
+StatementYield ::=
+    KW_YIELD Expression Token_EndLine
+StatementTypedef ::=
+    KW_TYPEDEF GenericIdentifier Token_Assign TypeIdentifier Token_EndLine
+StatementThread ::=
+    KW_THREAD Expression Token_EndLine
+StatementDefer ::=
+    KW_DEFER Expression Token_EndLine
+StatementAwait ::=
+    KW_AWAIT Expression Token_EndLine
+
+StatementVariableDefinition ::=
+    StatementVariableSingleDefinition | StatementVariableMultipleDefinition
+StatementVariableSingleDefinition ::=
+    KW_LET KW_MUT? Identifier Token_Assign (Expression | StatementIf | StatementMatch)
+StatementVariableMultipleDefinition ::=
+    KW_LET KW_MUT? Identifiers Token_Assign (Expression | StatementIf | StatementMatch)
+
+StatementListComprehensionFunction ::=
+    Token_LeftBracket Expression KW_FOR Identifier Token_Iterate Expression Token_RightBracket
+StatementListComprehensionGenerator ::=
+    Token_LeftParenthesis Expression KW_FOR Identifier Token_Iterate Expression Token_RightParenthesis
+
+Statement ::=
+    StatementIf | StatementWhile | StatementFor | StatementDoWhile | StatementMatch | StatementReturn | StatementYield |
+    StatementTypedef | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition Token_EndLine) |
+    (StatementListComprehensionFunction Token_EndLine) | (StatementListComprehensionGenerator Token_EndLine) | (Expression Token_EndLine)
+StatementBlock ::=
+    Statement+
+
+
+VariableDefinitionOrAssignment ::=
+    StatementVariableDefinition | (Identifier OperatorIdentifierAssignment Expression)
+StatementConditionExpressions ::=
+    (VariableDefinitionOrAssignment Token_Comma)*
+ExpressionCondition ::=
+    StatementVariableDefinition | Expression
+ExpressionFor ::=
+    (StatementVariableDefinition | Identifier) Token_Iterate Expression
+
+
+OperatorIdentifierAssignment ::=
+    Token_Assign | Token_Swap | ((OperatorIdentifierNullCoalescing | OperatorIdentifierBitwise | OperatorIdentifierLogical | OperatorIdentifierAdditive | ExpressionMultiplicative | ExpressionExponentiation) Token_Assign)
+OperatorIdentifierNullCoalescing ::=
+    TokenNullCoalescence | Token_Elvis
+OperatorIdentifierEquality ::=
+    Token_Equals | Token_NotEquals
+OperatorIdentifierBitwise ::=
+    Token_BitwiseAnd | Token_BitwiseOr | Token_BitwiseXor | Token_BitwiseNot | Token_BitwiseLeftShift | Token_BitwiseRightShift | Token_BitwiseLeftRotate | Token_BitwiseRightRotate
+OperatorIdentifierLogical ::=
+    Token_LogicalAnd | Token_LogicalOr | Token_LogicalNot
+OperatorIdentifierRelational ::=
+    Token_LessThan | Token_LessThanOrEqual | Token_GreaterThan | Token_GreaterThanOrEqual | Token_Spaceship
+OperatorIdentifierShift ::=
+    Token_BitwiseLeftShift | Token_BitwiseRightShift
+OperatorIdentifierRotate ::=
+    Token_BitwiseLeftRotate | Token_BitwiseRightRotate
+OperatorIdentifierAdditive ::=
+    Token_Plus | Token_Minus
+OperatorIdentifierMultiplicative ::=
+    Token_Multiply | Token_Divide | Token_FloorDivide | Token_Modulo
+OperatorIdentifierExponentiation ::=
+    Token_Exponentiate
+OperatorIdentifierMemberAccess ::=
+    Token_ScopeAccessDot | Token_ScopeAccessNullCoalescence | Token_ScopeAccessStatic | Token_ScopeAccessCustom
+OperatorIdentifierUnary ::=
+    Token_Plus | Token_Minus | Token_BitwiseNot | Token_LogicalNot | (Token_ReferenceToType KW_MUT?)
+OperatorIdentifierVariadic ::= // TODO
+    Token_Ellipses
+OperatorIdentifierPostfix ::=
+    PostfixFunctionCallOperator | PostfixMemberAccessOperator | PostfixIndexAccessOperator |
+    PostfixSliceAccessOperator | PostfixIncrementOperator | PostfixDecrementOperator
+OperatorIdentifierBinary ::=
+    OperatorIdentifierNullCoalescing | OperatorIdentifierEquality | OperatorIdentifierBitwise |
+    OperatorIdentifierLogical | OperatorIdentifierRelational | OperatorIdentifierAdditive |
+    OperatorIdentifierMultiplicative | OperatorIdentifierExponentiation
+OperatorIdentifier ::=
+    OperatorIdentifierUnary | OperatorIdentifierBinary | "[]" | "()" | "++" | "--" | PostfixMemberAccessOperator
+
+
+Identifier ::=
+    LE_IDENTIFIER
+ScopedIdentifier ::=
+    Identifier (Token_ScopeAccessStatic Identifier)*
+GenericIdentifier ::=
+    Identifier TypeGenericArguments?
+Identifiers ::=
+    Identifier (Token_Comma Identifier)*
+    
+    
+PostfixFunctionCallOperator ::=
+    Token_LeftParenthesis FunctionCallArguments? Token_RightParenthesis OperatorIdentifierVariadic?
+PostfixMemberAccessOperator ::=
+    OperatorIdentifierMemberAccess Identifier
+PostfixIndexAccessOperator ::=
+    Token_LeftBracket Expression Token_RightBracket
+PostfixSliceAccessOperator ::=
+    Token_LeftBracket Expression? Token_Slice Expression? (Token_Comma Expression)? Token_RightBracket
+PostfixIncrementOperator ::=
+    Token_Increment
+PostfixDecrementOperator ::=
+    Token_Decrement
+
+
+Literal ::=
+    NumberLiteral | StringLiteral | CharLiteral | BooleanLiteral | ListLiteral | MapLiteral | TupleLiteral | SetLiteral
+    | PairLiteral | RegexLiteral // | OptionalLiteral | ExpectedLiteral
+NumberLiteral ::=
+    B10NumberLiteral | B16NumberLiteral | B2NumberLiteral
+StringLiteral ::=
+    LE_DOUBLE_QUOTE_STRING
+CharLiteral ::=
+    LE_SINGLE_QUOTE_CHARACTER
+BooleanLiteral ::=
+    KW_TRUE | KW_FALSE
+ListLiteral ::=
+    Token_LeftBracket Expression Token_Range Expression? (Token_Comma Expression)? Token_RightBracket |
+    Token_LeftBracket (Expression (Token_Comma Expression)*)? Token_RightBracket
+MapLiteral ::=
+    Token_LeftBrace InternalPairLiteral (Token_Comma InternalPairLiteral)* Token_RightBrace
+TupleLiteral ::=
+    Token_LeftBracket (Expression Token_Comma)* Token_RightBracket
+SetLiteral ::=
+    Token_LeftBrace (Expression (Token_Comma Expression)*)? Token_RightBrace
+PairLiteral ::=
+    Token_LeftBracket InternalPairLiteral Token_RightBracket
+RegexLiteral ::=
+    LE_REGEX
+
+
+InternalPairLiteral ::=
+    Expression InternalPairSeparator Expression
+InternalPairSeparator ::=
+    TK_COLON
+B2NumberLiteral ::=
+    LE_BIN_DIGITS
+B10NumberLiteral ::=
+    Number
+B16NumberLiteral ::=
+    LE_HEX_DIGITS
+
+
+Number ::=
+    OperatorIdentifierAdditive? NumericDecimal NumericComplex? NumericExponent?
+NumericDecimal ::=
+    NumericInteger (Token_DecimalPoint NumericInteger)?
+NumericInteger ::=
+    LE_DEC_DIGITS
+NumericExponent ::=
+    ("e" | "E") OperatorIdentifierAdditive Number
+NumericComplex ::=
+    ("i" | "I")
+
+
+Token_DecimalPoint ::= TK_DOT
+
+Token_LeftBracket ::= TK_LEFT_BRACKET
+Token_RightBracket ::= TK_RIGHT_BRACKET
+Token_LeftBrace ::= TK_LEFT_BRACE
+Token_RightBrace ::= TK_RIGHT_BRACE
+Token_LeftParenthesis ::= TK_LEFT_PARENTHESIS
+Token_RightParenthesis ::= TK_RIGHT_PARENTHESIS
+
+Token_Assign ::= TK_EQUAL
+Token_Swap ::= TK_DOUBLE_ARROW
+Token_PipeToFunction ::= TK_PIPE
+
+Token_TernaryLHS ::= TK_QUESTION_MARK
+Token_TernaryRHS ::= TK_COLON
+
+TokenNullCoalescence ::= TK_DOUBLE_QUESTION_MARK
+Token_Elvis ::= TK_QUESTION_MARK_COLON
+
+Token_LogicalOr ::= TK_DOUBLE_VERTICAL_BAR
+Token_LogicalAnd ::= TK_DOUBLE_AMPERSAND
+Token_LogicalNot ::= TK_EXCLAMATION_MARK
+
+Token_BitwiseOr ::= TK_VERTICAL_BAR
+Token_BitwiseXor ::= TK_HAT
+Token_BitwiseAnd ::= TK_AMPERSAND
+Token_BitwiseNot ::= TK_TILDE
+Token_BitwiseLeftShift ::= TK_DOUBLE_LESS_THAN
+Token_BitwiseRightShift ::= TK_DOUBLE_GREATER_THAN
+Token_BitwiseLeftRotate ::= TK_TRIPLE_LEFT_ANGLE
+Token_BitwiseRightRotate ::= TK_TRIPLE_RIGHT_ANGLE
+
+Token_Equals ::= TK_DOUBLE_EQUAL
+Token_NotEquals ::= TK_EXCLAMATION_MARK_EQUALS
+Token_LessThan ::= TK_LEFT_ANGLE
+Token_LessThanOrEqual ::= TK_LEFT_ANGLE_EQUALS
+Token_GreaterThan ::= TK_RIGHT_ANGLE
+Token_GreaterThanOrEqual ::= TK_RIGHT_ANGLE_EQUALS
+Token_Spaceship ::= TK_DOUBLE_FAT_ARROW
+
+Token_Plus ::= TK_PLUS
+Token_Minus ::= TK_HYPHEN
+Token_Multiply ::= TK_MULTIPLY
+Token_Divide ::= TK_DIVIDE
+Token_FloorDivide ::= TK_DOUBLE_SLASH
+Token_Modulo ::= TK_MODULO
+Token_Exponentiate ::= TK_DOUBLE_ASTERISK
+
+Token_ScopeAccessDot ::= TK_DOT
+Token_ScopeAccessStatic ::= TK_DOUBLE_COLON
+Token_ScopeAccessCustom ::= TK_RIGHT_ARROW
+Token_ScopeAccessNullCoalescence ::= TK_QUESTION_MARK_DOT
+
+Token_Decorator ::= TK_AT
+
+Token_ImportAll ::= TK_ASTERISK
+Token_ExportAll ::= TK_ASTERISK
+Token_MatchAll ::= TK_ASTERISK
+
+Token_StartBlock ::= TK_COLON
+Token_ImportGetClasses ::= TK_RIGHT_ARROW
+Token_AccessRelativeModule ::= TK_DOT
+
+Token_Comma ::= TK_COMMA
+Token_NewLine ::= TK_NEWLINE
+Token_EndLine ::= TK_SEMI_COLON
+
+Token_ReturnType ::= TK_RIGHT_ARROW
+Token_TypeHint ::= TK_COLON
+Token_ReferenceToType ::= TK_AMPERSAND
+Token_LeftAngle ::= TK_LEFT_ANGLE
+Token_RightAngle ::= TK_RIGHT_ANGLE
+Token_TypeVariant ::= TK_VERTICAL_BAR
+
+Token_ApplyValueConstraintsIdentifier ::= TK_EXCLAMATION_MARK
+Token_Iterate ::= TK_LEFT_ARROW
+
+Token_Ellipses ::= TK_TRIPLE_DOT
+Token_Increment ::= TK_INCREMENT
+Token_Decrement ::= TK_DECREMENT
+
+Token_Slice ::= TK_COLON
+Token_Range ::= TK_DOUBLE_DOT
