@@ -67,6 +67,7 @@
         TK_AT = "@"
         TK_SPACESHIP = "<=>"
         TK_PIPE = "|>"
+        TK_SEMI_COLON = ";"
 
         KW_MODULE = "module"
         KW_IMPORT = "import"
@@ -122,36 +123,55 @@ ModuleDefinition ::=
 ModuleIdentifier ::=
     Identifier (TK_DOT Identifier)*
 
+
+StartBlockToken ::=
+    TK_COLON
+
+
 ImportBlock ::=
-    KW_IMPORT TK_COLON ImportDefinitions
+    KW_IMPORT StartBlockToken ImportDefinitions
 ImportDefinitions ::=
     ImportDefinition*
 ImportDefinition ::=
-    TK_DOT* ModuleIdentifier TK_ARROW (Identifiers | TK_MULTIPLY)
+    ImportRelativeDirToken* ModuleIdentifier ImportPullClassToken (Identifiers | ImportAllToken)
+ImportPullClassToken ::=
+    TK_ARROW
+ImportAllToken ::=
+    TK_MULTIPLY
+ImportRelativeDirToken ::=
+    TK_DOT
+
+
 ExportBlock ::=
-    KW_EXPORT TK_COLON (ExportDefinitions | TK_MULTIPLY)
+    KW_EXPORT StartBlockToken (ExportDefinitions | ExportAllToken)
 ExportDefinitions ::=
     Identifier (AnotherItem Identifier)*
+ExportAllToken ::=
+    TK_MULTIPLY
 
 
 NewLine ::=
     TK_NEWLINE
+EndLine ::=
+    TK_SEMICOLON
 EmptyImplementation ::=
     TK_ELLIPSES
+BasicAssignment ::=
+    TK_ASSIGN
 
 
 ClassPrototype ::=
-    Decorators? KW_CLASS GenericIdentifier GenericInheritance? ApplyConstraints? TK_COLON ClassImplementation
+    Decorators? KW_CLASS GenericIdentifier GenericInheritance? ApplyConstraints? StartBlockToken ClassImplementation
 ClassImplementation ::=
     EmptyImplementation | (ClassAttribute* ClassTypedefs* ClassFriends* ClassMethodPrototype*)
 ClassAttribute ::=
-    AccessModifier? KW_MUT? Identifier TK_COLON TK_BITWISE_AND? TypeIdentifier (TK_ASSIGN Expression)? TK_EOL
+    AccessModifier? KW_MUT? Identifier TypeHintToken TypeIdentifier (BasicAssignment Expression)? EndLine
 ClassTypedefs ::=
     AccessModifier? StatementTypedef
 ClassFriends ::=
-    AccessModifier? KW_FRIEND TypeIdentifier TK_EOL
+    AccessModifier? KW_FRIEND TypeIdentifier EndLine
 ClassMethodPrototype ::=
-    Decorators? AccessModifier? InnerFunctionPrototype
+    Decorators? AccessModifier? FunctionInnerPrototype
 AccessModifier ::=
     KW_PUBLIC | KW_PRIVATE | KW_PROTECTED | KW_PACKAGED
 
@@ -159,27 +179,29 @@ AccessModifier ::=
 // An enum is a set of members, which can be either a name, or a name with an associated value. The value can be
 // any expression, and the name can be any identifier. The members can be separated by newlines, or commas.
 EnumPrototype ::=
-    KW_ENUM Identifier Inheritance? TK_COLON EnumMembers
+    KW_ENUM Identifier Inheritance? StartBlockToken EnumMembers
 EnumMembers ::=
     EnumMember (AnotherItem EnumMember)*
 EnumMember ::=
-    Identifier (TK_ASSIGN Expression)?
+    Identifier (BasicAssignment Expression)?
 
 
 // A constraint is a set of constraints, which can be either member constraints (attribute, function, typedef),
 // inheritance constraints (can be multiple inheritance), or function-fitting (can be passed into a function).
 ConstraintPrototype ::=
-    KW_CONSTRAINT GenericIdentifier GenericInheritance? TK_COLON ConstraintMembers
+    KW_CONSTRAINT GenericIdentifier GenericInheritance? StartBlockToken ConstraintMembers
 ConstraintMembers ::=
-    (ConstraintMember TK_EOL)*
+    (ConstraintMember EndLine)*
 ConstraintMember ::=
-    TypeIdentifier ConstraintFunctionTypeParameters? TK_ARROW ConstraintFunctionReturnType |
+    TypeIdentifier ConstraintFunctionTypeParameters? ReturnTypeToken ConstraintFunctionReturnType |
     TypeIdentifier GenericInheritance |
     TypeIdentifier FunctionCallArguments
 ConstraintFunctionTypeParameters ::=
-    TK_LPAREN (TK_QUESTION | TypeIdentifiers?) TK_RPAREN
+    TK_LPAREN (ConstraintUnknownType | TypeIdentifiers?) TK_RPAREN
 ConstraintFunctionReturnType ::=
-    TypeIdentifier | TK_QUESTION
+    TypeIdentifier | ConstraintUnknownType
+ConstraintUnknownType ::=
+    TK_QUESTION
 
 
 Inheritance ::=
@@ -192,15 +214,23 @@ GenericInheritance ::=
 // potentially generic identifier, a set of parameters, a set of constraints, and a set of statements. The constraints
 // can be a set of type constraints, and a set of value constraints.
 FunctionPrototype ::=
-    Decorators? InnerFunctionPrototype
-InnerFunctionPrototype
-    ::= TK_ASYNC? FunctionType (GenericIdentifier | (OperatorIdentifier TypeGenericArguments)) TK_LPAREN FunctionParameters? TK_RPAREN TK_ARROW TypeIdentifier ApplyConstraints? TK_COLON FunctionImplementation
+    Decorators? FunctionInnerPrototype
+FunctionInnerPrototype
+    ::= TK_ASYNC? FunctionType (GenericIdentifier | (OperatorIdentifier TypeGenericArguments)) TK_LPAREN FunctionParameters? TK_RPAREN ReturnTypeToken TypeIdentifier ApplyConstraints? StartBlockToken FunctionImplementation
 FunctionType ::=
     KW_FUNCTION | KW_GENERATOR
-FunctionChain ::=
-    (TK_LOGICAL_OR | TK_LOGICAL_AND) TK_LOGICAL_NOT?
+FunctionChainToken ::=
+    (FunctionChainOrToken | FunctionChainAndToken) FunctionChainNotToken?
 FunctionImplementation ::=
     StatementBlock | EmptyImplementation
+ReturnTypeToken ::=
+    TK_ARROW
+FunctionChainOrToken ::=
+    TK_LOGICAL_OR
+FunctionChainAndToken ::=
+    TK_LOGICAL_AND
+FunctionChainNotToken ::=
+    TK_LOGICAL_NOT
 
 
 ApplyConstraints ::=
@@ -208,7 +238,7 @@ ApplyConstraints ::=
 ApplyTypeConstraints ::=
     ApplyTypeConstraint (AnotherItem ApplyTypeConstraint)*
 ApplyTypeConstraint ::=
-    Identifiers TK_COLON TypeIdentifier (FunctionChain TypeIdentifier)* // TODO : Shouldn't use TypeIdentifier (don't want |)
+    Identifiers TypeHintToken TypeIdentifier (FunctionChainToken TypeIdentifier)*
 ApplyValueConstraints ::=
     Expression (AnotherItem Expression)*
 
@@ -225,7 +255,7 @@ FunctionCallNamedArguments ::=
 FunctionCallNormalArgument ::=
     Expression
 FunctionCallNamedArgument ::=
-    Identifier TK_ASSIGN FunctionCallNormalArgument
+    Identifier BasicAssignment FunctionCallNormalArgument
 
 
 // How functions are defined: the set of required parameters, followed by the set of optional parameters. The optional
@@ -239,19 +269,21 @@ FunctionParameters2 ::=
     FunctionOptionalParameter (AnotherItem FunctionParameters2)? |
     FunctionVariadicParameter
 FunctionRequiredParameter ::=
-    KW_MUT? Identifier TK_COLON TK_BITWISE_AND? TypeIdentifier
+    KW_MUT? Identifier TypeHintToken TypeIdentifier
 FunctionOptionalParameter ::=
-    FunctionRequiredParameter TK_ASSIGN Expression
+    FunctionRequiredParameter BasicAssignment Expression
 FunctionVariadicParameter ::=
-    FunctionRequiredParameter TK_ELLIPSES
+    FunctionRequiredParameter OperatorIdentifierVariadic
 
 
 // Decorators are used to decorate the following item with additional information. They can decorate a function or a
 // class. TODO
 Decorator ::=
-    TK_AT ScopedIdentifier PostfixFunctionCallOperator?
+    DecoratorToken ScopedIdentifier PostfixFunctionCallOperator?
 Decorators ::=
     Decorator (NewLine Decorator)*
+DecoratorToken ::=
+    TK_AT
 
 
 // Lowest precedence operators
@@ -307,14 +339,24 @@ LambdaParameters ::=
 // std::list<std::list<std::int>>. A type can have a postfix, to either indicate a nested type, or a variant - for
 // example, std::list::value_type or std::list|std::int. The postfix can be repeated recursively. The type can also
 // have a ellipsis, to indicate a variadic type - for example, int... is an int parameter pack.
+TypeHintToken ::=
+    TK_COLON
 TypeIdentifier ::=
-    ScopedIdentifier TypeGenericArguments? TypePostfix?
+    TypeReferenceToken? ScopedIdentifier TypeGenericArguments? TypePostfix?
 TypeIdentifiers ::=
     TypeIdentifier (AnotherItem TypeIdentifier)*
 TypeGenericArguments ::=
-    TK_LESS_THAN TypeGenericParameters TK_GREATER_THAN
+    TypeGenericOpenParametersToken TypeGenericParameters TypeGenericCloseParametersToken
 TypePostfix ::=
-    (TK_DBL_COLON | TK_BITWISE_OR) TypeIdentifier
+    (ScopeToken | TypeVariantToken) TypeIdentifier
+TypeReferenceToken ::=
+    TK_BITWISE_AND
+TypeGenericOpenParametersToken ::=
+    TK_LESS_THAN
+TypeGenericCloseParametersToken ::=
+    TK_GREATER_THAN
+TypeVariantToken ::=
+    TK_BITWISE_OR
 
 TypeGenericParameters ::=
     TypeGenericOptionalParameter (AnotherItem TypeGenericParameters2)? |
@@ -325,58 +367,64 @@ TypeGenericParameters2 ::=
 TypeGenericRequiredParameter ::=
     TypeIdentifier
 TypeGenericOptionalParameter ::=
-    TypeGenericRequiredParameter TK_ASSIGN TypeIdentifier
+    TypeGenericRequiredParameter BasicAssignment TypeIdentifier
 TypeGenericVariadicParameter ::=
-    TypeGenericRequiredParameter TK_ELLIPSES
+    TypeGenericRequiredParameter OperatorIdentifierVariadic
 
 
 // All statements - these are the statements that can be used in the language. They are technically expressions, as they
 // can "return" values to the outer scope, but classed as statements because they can also be used as a statement.
 // Returning from a statement involves the last statement being the return value if assignment precedes the statement.
 StatementIf ::=
-    KW_IF StatementConditionExpressions? ExpressionCondition TK_COLON StatementBlock StatementElse?
+    KW_IF StatementConditionExpressions? ExpressionCondition StartBlockToken StatementBlock StatementElse?
 StatementElse ::=
-    KW_ELSE (StatementIf | (TK_COLON StatementBlock))
+    KW_ELSE (StatementIf | (StartBlockToken StatementBlock))
 StatementWhile ::=
-    KW_WHILE StatementConditionExpressions? ExpressionCondition TK_COLON StatementBlock
+    KW_WHILE StatementConditionExpressions? ExpressionCondition StartBlockToken StatementBlock
 StatementFor ::=
-    KW_FOR StatementConditionExpressions? ExpressionFor TK_COLON StatementBlock
+    KW_FOR StatementConditionExpressions? ExpressionFor StartBlockToken StatementBlock
 StatementDoWhile ::=
-    KW_DO TK_COLON StatementBlock KW_WHILE ExpressionCondition TK_EOL
+    KW_DO StartBlockToken StatementBlock KW_WHILE ExpressionCondition EndLine
 StatementMatch ::=
-    KW_MATCH StatementConditionExpressions? ExpressionCondition TK_COLON StatementCase* StatementCaseDefault
+    KW_MATCH StatementConditionExpressions? ExpressionCondition StartBlockToken StatementCase* StatementCaseDefault
 StatementCase ::=
-    KW_CASE StatementConditionExpressions? ExpressionCondition TK_COLON StatementBlock
+    KW_CASE StatementConditionExpressions? ExpressionCondition StartBlockToken StatementBlock
 StatementCaseDefault ::=
-    TK_UNDERSCORE TK_COLON StatementBlock
+    TK_UNDERSCORE StartBlockToken StatementBlock
 StatementReturn ::=
-    KW_RETURN Expression TK_EOL
+    KW_RETURN Expression EndLine
 StatementYield ::=
-    KW_YIELD Expression TK_EOL
+    KW_YIELD Expression EndLine
 StatementTypedef ::=
-    KW_TYPEDEF GenericIdentifier TK_ASSIGN TypeIdentifier TK_EOL
+    KW_TYPEDEF GenericIdentifier BasicAssignment TypeIdentifier EndLine
 StatementThread ::=
-    KW_THREAD Expression TK_EOL
+    KW_THREAD Expression EndLine
 StatementDefer ::=
-    KW_DEFER Expression TK_EOL
+    KW_DEFER Expression EndLine
 StatementAwait ::=
-    KW_AWAIT Expression TK_EOL
+    KW_AWAIT Expression EndLine
+
 StatementVariableDefinition ::=
-    (StatementVariableSingleDefinition | StatementVariableMultipleDefinition)
+    StatementVariableSingleDefinition | StatementVariableMultipleDefinition
 StatementVariableSingleDefinition ::=
-    KW_LET KW_MUT? Identifier TK_ASSIGN (Expression | StatementIf | StatementMatch)
+    KW_LET KW_MUT? Identifier BasicAssignment (Expression | StatementIf | StatementMatch)
 StatementVariableMultipleDefinition ::=
-    KW_LET KW_MUT? Identifiers TK_ASSIGN (Expression | StatementIf | StatementMatch)
+    KW_LET KW_MUT? Identifiers BasicAssignment (Expression | StatementIf | StatementMatch)
+
 StatementListComprehensionFunction ::=
-    TK_LBRACKET Expression TK_FOR Identifier TK_REVERSE_ARROW Expression TK_RBRACKET
+    TK_LBRACKET Expression TK_FOR Identifier ForLoopIteratorToken Expression TK_RBRACKET
 StatementListComprehensionGenerator ::=
-    TK_LPAREN Expression TK_FOR Identifier TK_REVERSE_ARROW Expression TK_RPAREN
+    TK_LPAREN Expression TK_FOR Identifier ForLoopIteratorToken Expression TK_RPAREN
+
 Statement ::=
     StatementIf | StatementWhile | StatementFor | StatementDoWhile | StatementMatch | StatementReturn | StatementYield |
-    StatementTypedef | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition TK_EOL) |
-    (StatementListComprehensionFunction TK_EOL) | (StatementListComprehensionGenerator TK_EOL) | (Expression TK_EOL)
+    StatementTypedef | StatementThread | StatementDefer | StatementAwait | (StatementVariableDefinition EndLine) |
+    (StatementListComprehensionFunction EndLine) | (StatementListComprehensionGenerator EndLine) | (Expression EndLine)
 StatementBlock ::=
     Statement+
+
+ForLoopIteratorToken ::=
+    TK_REVERSE_ARROW
 
 
 VariableDefinitionOrAssignment ::=
@@ -386,7 +434,7 @@ StatementConditionExpressions ::=
 ExpressionCondition ::=
     StatementVariableDefinition | Expression
 ExpressionFor ::=
-    (StatementVariableDefinition | Identifier) TK_REVERSE_ARROW Expression
+    (StatementVariableDefinition | Identifier) ForLoopIteratorToken Expression
 
 
 
@@ -417,6 +465,8 @@ OperatorIdentifierMemberAccess ::=
     TK_DOT | TK_QUESTION_DOT | TK_DOUBLE_COLON | TK_ARROW | TK_SQUIGLE_ARROW
 OperatorIdentifierUnary ::=
     TK_PLUS | TK_MINUS | TK_BITWISE_NOT | TK_LOGICAL_NOT | (TK_BITWISE_AND KW_MUT?)
+OperatorIdentifierVariadic ::= // TODO
+    TK_ELLIPSES
 OperatorIdentifierPostfix ::=
     PostfixFunctionCallOperator | PostfixMemberAccessOperator | PostfixIndexAccessOperator |
     PostfixSliceAccessOperator | PostfixIncrementOperator | PostfixDecrementOperator
@@ -433,30 +483,38 @@ OperatorIdentifier ::=
 Identifier ::=
     TK_IDENTIFIER
 ScopedIdentifier ::=
-    Identifier (TK_DBL_COLON Identifier)*
+    Identifier (ScopeToken Identifier)*
 GenericIdentifier ::=
     Identifier TypeGenericArguments?
 Identifiers ::=
     Identifier (AnotherItem Identifier)*
 AnotherItem ::=
     TK_COMMA
+ScopeToken ::=
+    TK_DBL_COLON
 
 
 
 // Postfix operators are operators that are applied to the end of an expression, and depending on the expression, may
 // be applied to the current part of the expression, or the result of the entire expression.
 PostfixFunctionCallOperator ::=
-    TK_LPAREN FunctionCallArguments? TK_RPAREN TK_ELLIPSES?
+    TK_LPAREN FunctionCallArguments? TK_RPAREN OperatorIdentifierVariadic?
 PostfixMemberAccessOperator ::=
     OperatorIdentifierMemberAccess Identifier
 PostfixIndexAccessOperator ::=
     TK_LBRACKET Expression TK_RBRACKET
 PostfixSliceAccessOperator ::=
-    TK_LBRACKET Expression? TK_COLON Expression? (AnotherItem Expression)? TK_RBRACKET
+    TK_LBRACKET Expression? SliceToken Expression? (AnotherItem Expression)? TK_RBRACKET
 PostfixIncrementOperator ::=
     TK_INCREMENT
 PostfixDecrementOperator ::=
     TK_DECREMENT
+
+
+SliceToken ::=
+    TK_COLON
+RangeToken ::=
+    TK_DOT TK_DOT
 
 
 
@@ -475,7 +533,7 @@ CharLiteral ::=
 BooleanLiteral ::=
     KW_TRUE | KW_FALSE
 ListLiteral ::=
-    TK_LBRACKET Expression TK_DOT TK_DOT Expression? (AnotherItem Expression)? TK_RBRACKET |
+    TK_LBRACKET Expression RangeToken Expression? (AnotherItem Expression)? TK_RBRACKET |
     TK_LBRACKET (Expression (AnotherItem Expression)*)? TK_RBRACKET
 MapLiteral ::=
     TK_LBRACE InternalPairLiteral (AnotherItem InternalPairLiteral)* TK_RBRACE
@@ -511,10 +569,12 @@ B16NumberLiteral ::=
 Number ::=
     OperatorIdentifierAdditive? NumericDecimal NumericComplex? NumericExponent?
 NumericDecimal ::=
-    NumericInteger (TK_DOT NumericInteger)?
+    NumericInteger (NumericDecimalPointToken NumericInteger)?
 NumericInteger ::=
     TK_DEC_DIGITS
 NumericExponent ::=
     ("e" | "E") OperatorIdentifierAdditive Number
 NumericComplex ::=
     ("i" | "I")
+NumericDecimalPointToken ::=
+    TK_DOT
