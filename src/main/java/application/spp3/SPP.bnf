@@ -21,20 +21,20 @@
         TK_DOT = "."
         TK_COLON = ":"
         TK_COMMA = ","
-        TK_ASSIGN = "="
-        TK_BITWISE_AND = "&"
-        TK_BITWISE_OR = "|"
-        TK_BITWISE_XOR = "^"
-        TK_BITWISE_NOT = "~"
-        TK_BITWISE_LSHIFT = "<<"
-        TK_BITWISE_RSHIFT = ">>"
-        TK_BITWISE_LROTATE = "<<<"
-        TK_BITWISE_RROTATE = ">>>"
-        TK_LOGICAL_AND = "&&"
-        TK_LOGICAL_OR = "||"
-        TK_LOGICAL_NOT = "!"
-        TK_LESS_THAN = "<"
-        TK_GREATER_THAN = ">"
+        TK_ASSIGN = "=" // TODO: TK_EQUALS
+        TK_BITWISE_AND = "&" // TODO: TK_AMPERSAND
+        TK_BITWISE_OR = "|" // TODO: TK_VERTICAL_PIPE
+        TK_BITWISE_XOR = "^" // TODO: TK_HAT
+        TK_BITWISE_NOT = "~" // TODO: TK_TILDE
+        TK_BITWISE_LSHIFT = "<<" // TODO: TK_DOUBLE_LANGLE
+        TK_BITWISE_RSHIFT = ">>" // TODO: TK_DOUBLE_RANGLE
+        TK_BITWISE_LROTATE = "<<<" // TODO: TK_TRIPLE_LANGLE
+        TK_BITWISE_RROTATE = ">>>" // TODO: TK_TRIPLE_RANGLE
+        TK_LOGICAL_AND = "&&" // TODO: TK_DOUBLE_AMPERSAND
+        TK_LOGICAL_OR = "||" // TODO: TK_DOUBLE_VERTICAL_PIPE
+        TK_LOGICAL_NOT = "!" // TODO: TK_EXCLAMATION_MARK
+        TK_LESS_THAN = "<" // TODO: TK_LANGLE
+        TK_GREATER_THAN = ">" // TODO: TK_RANGLE
         TK_DBL_COLON = "::"
         TK_LPAREN = "("
         TK_RPAREN = ")"
@@ -42,32 +42,31 @@
         TK_RBRACKET = "]"
         TK_LBRACE = "{"
         TK_RBRACE = "}"
-        TK_QUESTION = "?"
-        TK_ELLIPSES = "..."
-        TK_EQUAL = "=="
-        TK_NOT_EQUAL = "!="
-        TK_LESS_THAN_EQUAL = "<="
-        TK_GREATER_THAN_EQUAL = ">="
-        TK_EOL = ";"
-        TK_PLUS = "+"
-        TK_MINUS = "-"
-        TK_MULTIPLY = "*"
-        TK_DIVIDE = "/"
-        TK_FLOOR_DIVIDE = "//"
-        TK_MODULO = "%"
-        TK_EXPONENTIATE = "**"
-        TK_QUESTION_QUESTION = "??"
-        TK_QUESTION_COLON = "?:"
-        TK_ARROW = "->"
-        TK_SWAP = "<->"
-        TK_SQUIGLE_ARROW = "~>"
-        TK_REVERSE_ARROW = "<-"
-        TK_INCREMENT = "++"
-        TK_DECREMENT = "--"
-        TK_AT = "@"
-        TK_SPACESHIP = "<=>"
-        TK_PIPE = "|>"
+        TK_QUESTION = "?" // TODO: TK_QUESTION_MARK
+        TK_ELLIPSES = "..." // TODO: TK_TRIPLE_DOT
+        TK_EQUAL = "==" // TODO: TK_DOUBLE_EQUALS
+        TK_NOT_EQUAL = "!=" // TODO: TK_EXCLAMATION_EQUALS
+        TK_LESS_THAN_EQUAL = "<=" // TODO: TK_LANGLE_EQUALS
+        TK_GREATER_THAN_EQUAL = ">=" // TODO: TK_RANGLE_EQUALS
+        TK_PLUS = "+" // TODO: TK_PLUS_SIGN
+        TK_MINUS = "-" // TODO: TK_MINUS_SIGN
+        TK_MULTIPLY = "*" // TODO: TK_ASTERISK
+        TK_DIVIDE = "/" // TODO: TK_FORWARD_SLASH
+        TK_FLOOR_DIVIDE = "//" // TODO: TK_DOUBLE_FORWARD_SLASH
+        TK_MODULO = "%" // TODO: TK_PERCENT
+        TK_EXPONENTIATE = "**" // TODO: TK_DOUBLE_ASTERISK
+        TK_QUESTION_QUESTION = "??" // TODO: TK_DOUBLE_QUESTION_MARK
+        TK_QUESTION_COLON = "?:" // TODO: TK_QUESTION_MARK_COLON
+        TK_ARROW = "->" // TODO: TK_RARROW
+        TK_SWAP = "<->" // TODO: TK_DOUBLE_ARROW
+        TK_REVERSE_ARROW = "<-" // TODO: TK_LARROW
+        TK_INCREMENT = "++" // TODO: TK_DOUBLE_PLUS
+        TK_DECREMENT = "--" // TODO: TK_DOUBLE_MINUS
+        TK_AT = "@" // TODO: TK_AT_SIGN
+        TK_SPACESHIP = "<=>" // TODO: TK_TRIPLE_ARROW
+        TK_PIPE = "|>" // TODO: TK_PIPE_RARROW
         TK_SEMI_COLON = ";"
+        TK_QUESTION_DOT = "?."
 
         KW_MODULE = "module"
         KW_IMPORT = "import"
@@ -119,7 +118,7 @@ Program ::=
 ProgramContents ::=
     ModuleDefinition ImportBlock? EnumPrototype* ConstraintPrototype* ClassPrototype* FunctionPrototype* ExportBlock?
 ModuleDefinition ::=
-    KW_MODULE ModuleIdentifier TK_EOL
+    KW_MODULE ModuleIdentifier EndLine
 ModuleIdentifier ::=
     Identifier (TK_DOT Identifier)*
 
@@ -131,7 +130,7 @@ StartBlockToken ::=
 ImportBlock ::=
     KW_IMPORT StartBlockToken ImportDefinitions
 ImportDefinitions ::=
-    ImportDefinition*
+    (ImportDefinition EndLine)*
 ImportDefinition ::=
     ImportRelativeDirToken* ModuleIdentifier ImportPullClassToken (Identifiers | ImportAllToken)
 ImportPullClassToken ::=
@@ -143,9 +142,9 @@ ImportRelativeDirToken ::=
 
 
 ExportBlock ::=
-    KW_EXPORT StartBlockToken (ExportDefinitions | ExportAllToken)
+    KW_EXPORT StartBlockToken ExportDefinitions
 ExportDefinitions ::=
-    Identifier (AnotherItem Identifier)*
+    ((Identifier (AnotherItem Identifier)*) | ExportAllToken) EndLine
 ExportAllToken ::=
     TK_MULTIPLY
 
@@ -153,7 +152,7 @@ ExportAllToken ::=
 NewLine ::=
     TK_NEWLINE
 EndLine ::=
-    TK_SEMICOLON
+    TK_SEMI_COLON
 EmptyImplementation ::=
     TK_ELLIPSES
 BasicAssignment ::=
@@ -181,7 +180,7 @@ AccessModifier ::=
 EnumPrototype ::=
     KW_ENUM Identifier Inheritance? StartBlockToken EnumMembers
 EnumMembers ::=
-    EnumMember (AnotherItem EnumMember)*
+    EnumMember (AnotherItem EnumMember)* EndLine
 EnumMember ::=
     Identifier (BasicAssignment Expression)?
 
@@ -197,7 +196,7 @@ ConstraintMember ::=
     TypeIdentifier GenericInheritance |
     TypeIdentifier FunctionCallArguments
 ConstraintFunctionTypeParameters ::=
-    TK_LPAREN (ConstraintUnknownType | TypeIdentifiers?) TK_RPAREN
+    TK_LPAREN (ConstraintUnknownType | TypeIdentifiers)? TK_RPAREN
 ConstraintFunctionReturnType ::=
     TypeIdentifier | ConstraintUnknownType
 ConstraintUnknownType ::=
@@ -234,13 +233,15 @@ FunctionChainNotToken ::=
 
 
 ApplyConstraints ::=
-    KW_WHERE ApplyTypeConstraints? ApplyValueConstraints?
+    KW_WHERE (ApplyTypeConstraints | ApplyValueConstraints) | (ApplyTypeConstraints ApplyValueConstraints)
 ApplyTypeConstraints ::=
     ApplyTypeConstraint (AnotherItem ApplyTypeConstraint)*
 ApplyTypeConstraint ::=
     Identifiers TypeHintToken TypeIdentifier (FunctionChainToken TypeIdentifier)*
 ApplyValueConstraints ::=
-    Expression (AnotherItem Expression)*
+    ApplyValueConstraintsIdentifierToken TypeHintToken Expression (AnotherItem Expression)*
+ApplyValueConstraintsIdentifierToken ::=
+    TK_LOGICAL_NOT
 
 
 // How functions are called: the set of arguments, which will be all the normal arguments first, followed by all the

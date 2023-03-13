@@ -19,12 +19,60 @@ import:
 class rng:
 
     @static_method
-    public generator chunk<I, J=I::value_type>(chunk_length: &std::number, iterable: &I) -> mut std::generator<J> where
-            I: std::constraints::iterable, I::value_type: std::constraints::iterable,
-            J: std::constraints::iterable:
+    public function cartesian_product<I...>(iterables: &I...) -> I<I::value_type> where
+            I: std::constraints::iterable:
 
+        let product = I<I::value_type>();
+        for i <- iterables:
+            if product.empty():
+                for j <- i:
+                    product.emplace_back(j);
+            else:
+                let new_product = I<I::value_type>();
+                for j <- i:
+                    for k <- product:
+                        new_product.emplace_back(k);
+                        new_product.back().emplace_back(j);
+                product = new_product;
+        return product;
+
+    @static_method
+    public function chunk<I, J=I>(chunk_length: &std::number, iterable: &I) -> I<J<I::value_type>>
+    where I, J: std::constraints::iterable:
+
+        let mut chunked = I<J<I::value_type>>();
         for i <- [0..iterable.length(), chunk_length]):
-            yield iterable[index:index + chunk_length]
+            chunked.emplace_back(iterable[index:index + chunk_length]);
+        return chunked;
+
+    @static_method
+    public function chunk_if<F, I, J=I>(function: &F, iterable: &I) -> I<J<I::value_type>> where
+            I, J: std::constraints::iterable,
+            F: std::constraints::callable_accepts<I::value_type>:
+
+        let mut chunked = I<J<I::value_type>>();
+        let modified_iterable = iterable |> enumerate |> filter(x -> x[1] |> f) |> keys;
+        for i, j <- zip(modified_iterable, modified_iterable[1:] += [iterable.length()]):
+            chunked.emplace_back(iterable[i:j]);
+        return chunked;
+
+    @static_method
+    public generator cycle<I>(iterable: &I) -> std::generator<I::value_type> where
+            I: std::constraints::iterable:
+
+        while true:
+            for element <- iterable:
+                yield element;
+
+
+    @static_method
+    public function cycle<I>(&iterable: &I) -> I<I::value_type> where
+            I: std::constraints::iterable:
+
+        let cycled = I<I::value_type>();
+        for _ <- [0..times]:
+            cycled.emplace_back(iterable);
+        return cycled;
 
 
     @static_method
